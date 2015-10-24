@@ -6,22 +6,27 @@
 """
 
 import goldman
-import goldman.exceptions as exceptions
 import falcon
 
 from ..resources.base import Resource as BaseResource
-# from app.store import store
-from datetime import datetime as dt
-from goldman.utils.error_handlers import abort
-from uuid import uuid4
 
 
 class Resource(BaseResource):
     """ Multiple items resource & responders """
 
-    def __init__(self, model):
+    DESERIALIZERS = [
+        goldman.JSONAPIDeserializer,
+    ]
+
+    SERIALIZERS = [
+        goldman.CSVSerializer,
+        goldman.JSONAPISerializer,
+    ]
+
+    def __init__(self, model, store):
 
         self.model = model
+        self.store = store
 
         super(Resource, self).__init__()
 
@@ -48,23 +53,12 @@ class Resource(BaseResource):
     def on_post(self, req, resp):
         """ Deserialize the payload & create the new single item """
 
+        responder = goldman.ModelResponder(self, req, resp)
         props = req.deserialize()
-        model = self.model()
-
-        model.created = dt.utcnow()
-        # model.creator = login
-        model.updated = dt.utcnow()
-        model.uuid = str(uuid4())
-
-        model.from_rest(props)
-
-        if not model.acl_create(req.login) or not model.acl_save(req.login):
-            abort(exceptions.ModificationDenied)
-
-        store.create(model)
+        model = responder.create(props)
 
         resp.last_modified = model.updated
         resp.location = model.location
         resp.status = falcon.HTTP_201
 
-        resp.serialize(model.to_rest())
+        resp.serialize(responder.to_rest(model))

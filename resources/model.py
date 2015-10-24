@@ -5,19 +5,13 @@
     Single item resource object with responders.
 
     This can be used directly or sub-classed for handling common
-    methods against single items. Approved methods are currently:
-
-        DELETE, GET, PATCH, POST
+    methods against single items.
 """
 
 import goldman
-import goldman.exceptions as exceptions
 import falcon
 
 from ..resources.base import Resource as BaseResource
-# from app.store import store
-from goldman.utils.error_handlers import abort
-from datetime import datetime as dt
 
 
 class Resource(BaseResource):
@@ -46,42 +40,31 @@ class Resource(BaseResource):
         is returned.
         """
 
-        model = goldman.RestResponder(req, self.model).find(uuid)
+        responder = goldman.ModelResponder(self, req, resp)
 
-        if not model.acl_delete(req.login):
-            abort(exceptions.ModificationDenied)
-
-        self.store.delete(model)
+        responder.find_and_delete(uuid)
 
         resp.status = falcon.HTTP_204
 
     def on_get(self, req, resp, uuid):
         """ Find the model by id & serialize it back """
 
-        rest = goldman.RestResponder(req, self.model)
-        model = rest.find(self.store, uuid)
+        responder = goldman.ModelResponder(self, req, resp)
+        model = responder.find(uuid)
 
         resp.last_modified = model.updated
         resp.location = model.location
 
-        resp.serialize(rest.to_rest(model))
+        resp.serialize(responder.to_rest(model))
 
     def on_patch(self, req, resp, uuid):
         """ Deserialize the payload & update the single item """
 
-        model = goldman.RestResponder(req, self.model).find(uuid)
-
+        responder = goldman.ModelResponder(self, req, resp)
         props = req.deserialize()
-        model.updated = dt.utcnow()
-
-        model.from_rest(props)
-
-        if not model.acl_update(req.login) or not model.acl_save(req.login):
-            abort(exceptions.ModificationDenied)
-
-        self.store.update(model)
+        model = responder.find_and_update(props, uuid)
 
         resp.last_modified = model.updated
         resp.location = model.location
 
-        resp.serialize(model.to_rest())
+        resp.serialize(responder.to_rest(model))

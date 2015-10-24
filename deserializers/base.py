@@ -32,9 +32,12 @@ class Deserializer(object):
         common stuff that would be annoying for each & every other
         deserializer to implement.
 
-        :param data: the already deserialized data
-        :param req: falcon request object
-        :return: possibly mutated data param
+        :param data:
+            the already deserialized data
+        :param req:
+            falcon request object
+        :return:
+            possibly mutated data param
         """
 
         return data

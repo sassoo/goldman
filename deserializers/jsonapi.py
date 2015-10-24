@@ -6,6 +6,12 @@
     as documented here:
 
         http://jsonapi.org/
+
+    It's broken down into 2 parts:
+
+        1) A parser for spec compliant validations
+        2) A normalizer for converting into a common
+           format expected by our resources/responders.
 """
 
 import goldman
@@ -25,9 +31,9 @@ class Normalizer(object):
 
         Perform the following:
 
-            1. Add the type as a resource property
-            2. Flatten the payload
-            3. Add the id as a uuid property ONLY if present
+            1) Add the type as a resource property
+            2) Flatten the payload
+            3) Add the id as a uuid property ONLY if present
 
         We don't need to vet the inputs much because the
         Parser has already done all the work.
@@ -80,11 +86,10 @@ class Normalizer(object):
         for key, val in relationships.items():
             if not val['data']:
                 ret[key] = None
-
             else:
                 ret[key] = {
                     'rtype': val['data']['type'],
-                    'uuid': val['data']['id']
+                    'uuid': val['data']['id'],
                 }
 
         return ret
@@ -121,7 +126,8 @@ class Parser(object):
         object. This contains the key / values to be mapped to the
         model.
 
-        :param attributes: dict JSON API attributes object
+        :param attributes:
+            dict JSON API attributes object
         """
 
         link = 'jsonapi.org/format/#document-resource-object-attributes'
@@ -142,7 +148,8 @@ class Parser(object):
         object. For modifications we only support relationships via
         the `data` key referred to as Resource Linkage.
 
-        :param relationships: dict JSON API relationships object
+        :param relationships:
+            dict JSON API relationships object
         """
 
         link = 'jsonapi.org/format/#document-resource-object-relationships'

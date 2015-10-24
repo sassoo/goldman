@@ -104,7 +104,7 @@ class Request(FalconRequest):
         """ Read in the request stream & return it as is
 
         If the request object doesn't claim to have a request body
-        eg not content_length, then return None
+        eg no content_length, then return None
 
         WARNING: This could use a ton of memory so use it wisely.
                  Images or bulk payloads should be read in more

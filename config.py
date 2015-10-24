@@ -3,7 +3,7 @@
     ~~~~~~
 
     Initialize some of our helpful constants used throughout
-    the api & merge them with an app specific overrides.
+    the api & merge them with any app specific overrides.
 """
 
 import importlib

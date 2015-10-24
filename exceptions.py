@@ -2,8 +2,8 @@
     exceptions
     ~~~~~~~~~~
 
-    Custom error classes to be raised throughout the app to abort requests
-    with JSON API compliant errors
+    Custom error classes to be raised throughout the app to
+    abort requests with JSON API compliant errors
 """
 
 import goldman

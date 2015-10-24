@@ -2,7 +2,7 @@
     deserializers
     ~~~~~~~~~~~~~
 
-    Location of different deserializers supported by our API
+    All deserializers supported by our API
 """
 
 from ..deserializers.base import Deserializer as BaseDeserializer

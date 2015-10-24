@@ -6,9 +6,9 @@
     methods across our responders by a logical grouping.
 """
 
-from ..responders.rest import Responder as RestResponder
+from ..responders.model import Responder as ModelResponder
 
 
 RESPONDERS = [
-    RestResponder,
+    ModelResponder,
 ]

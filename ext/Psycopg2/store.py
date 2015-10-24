@@ -214,13 +214,7 @@ class Store(object):
             table=model.rtype,
         )
 
-        model.pre_create()
-        model.pre_save()
-
         result = self.query(query, one=True, param=param)
-
-        model.post_create()
-        model.post_save()
 
         return result
 
@@ -239,9 +233,7 @@ class Store(object):
             table=model.rtype,
         )
 
-        model.pre_delete()
         result = self.query(query, one=True, param=param)
-        model.post_delete()
 
         return result
 
@@ -316,12 +308,6 @@ class Store(object):
             table=model.rtype,
         )
 
-        model.pre_update()
-        model.pre_save()
-
         result = self.query(query, one=True, param=param)
-
-        model.post_update()
-        model.post_save()
 
         return result

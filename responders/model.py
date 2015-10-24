@@ -1,6 +1,6 @@
 """
-    responders.rest
-    ~~~~~~~~~~~~~~~
+    responders.model
+    ~~~~~~~~~~~~~~~~
 
     Model responder mixin.
 
@@ -13,16 +13,18 @@
 """
 
 import goldman.exceptions as exceptions
-import goldman.queryparams.fields as fields
-import goldman.queryparams.filter as filtr
-import goldman.queryparams.include as include
-import goldman.queryparams.page as page
-import goldman.queryparams.sort as sort
+import goldman.queryparams.fields as qp_fields
+import goldman.queryparams.filter as qp_filter
+import goldman.queryparams.include as qp_include
+import goldman.queryparams.page as qp_page
+import goldman.queryparams.sort as qp_sort
 
+from datetime import datetime as dt
 from goldman.utils.error_handlers import abort
 from goldman.utils.str_helpers import str_to_uuid
 from schematics.exceptions import ModelValidationError
 from schematics.types import EmailType
+from uuid import uuid4
 
 
 def from_rest_hide(model, props):
@@ -89,29 +91,39 @@ def to_rest_hide(model, props):
     return props
 
 
+# pylint: disable=too-many-instance-attributes
 class Responder(object):
     """ Model responder mixin """
 
-    def __init__(self, req, model):
-        """ Initialize all the REST supported query params
+    def __init__(self, resource, req, resp):  # pylint: disable=unused-argument
+        """ Initialize all the model responder
 
-        The model that is passed in should be a class object
-        of the model & not an instance so it shouldn't be used
-        beyond intialization.
+        This responder should be passed in the same args as a
+        native falcon resources responder. The responder will
+        expect to find the following attributes on the resource:
+
+        `resource.model`:
+            model class (not instance)
+        `resource.store`:
+            an instance of the store for the store wrapping
+            capabilities of this responder
         """
 
         self._login = req.login
-        self._model = model
+        self._model = resource.model
+        self._store = resource.store
 
-        model_fields = model.all_fields
-        model_rels = model.relationships
-        model_rtype = model.rtype
+        # declare these here instead of in each query
+        # param since they are a bit expensive.
+        fields = self._model.all_fields
+        rels = self._model.relationships
+        rtype = self._model.RTYPE
 
-        self.fields = fields.from_req(req, model_rtype, model_fields)
-        self.filters = filtr.from_req(req, model_fields)
-        self.includes = include.from_req(req, model_rels)
-        self.pages = page.from_req(req)
-        self.sorts = sort.from_req(req, model_fields, model_rels)
+        self.fields = qp_fields.from_req(req, rtype, fields)
+        self.filters = qp_filter.from_req(req, fields)
+        self.includes = qp_include.from_req(req, rels)
+        self.pages = qp_page.from_req(req)
+        self.sorts = qp_sort.from_req(req, fields, rels)
 
     @staticmethod
     def validate_uuid(uuid):
@@ -126,12 +138,32 @@ class Responder(object):
                 'links': 'en.wikipedia.org/wiki/Universally_unique_identifier',
             }))
 
-    def find(self, store, uuid):
+    def create(self, props):
+        """ Create a new model in the store """
+
+        model = self._model()
+        model.created = dt.utcnow()
+        # model.creator = self._login
+        model.updated = dt.utcnow()
+        model.uuid = str(uuid4())
+
+        self.from_rest(model, props)
+        model.pre_create()
+        model.pre_save()
+
+        if not all(model.acl_create(self._login), model.acl_save(self._login)):
+            abort(exceptions.ModificationDenied)
+
+        self._store.create(model)
+        model.post_create()
+        model.post_save()
+
+    def find(self, uuid):
         """ Find a model from the store by uuid """
 
         self.validate_uuid(uuid)
 
-        model = store.find(self._model, uuid)
+        model = self._store.find(self._model, uuid)
 
         if not model:
             abort(exceptions.DocumentNotFound)
@@ -139,6 +171,36 @@ class Responder(object):
             abort(exceptions.ReadDenied)
 
         return model
+
+    def find_and_delete(self, uuid):
+        """ Find a model & delete it from the store by uuid """
+
+        model = self.find(uuid)
+
+        model.pre_delete()
+
+        if not model.acl_delete(self._login):
+            abort(exceptions.ModificationDenied)
+
+        self._store.delete(model)
+        model.post_delete()
+
+    def find_and_update(self, props, uuid):
+        """ Find a model & delete it from the store by uuid """
+
+        model = self.find(uuid)
+        model.updated = dt.utcnow()
+
+        self.from_rest(model, props)
+        model.pre_update()
+        model.pre_save()
+
+        if not all(model.acl_update(self._login), model.acl_save(self._login)):
+            abort(exceptions.ModificationDenied)
+
+        self._store.update(model)
+        model.post_update()
+        model.post_save()
 
     def from_rest(self, model, props):
         """ Map the REST data onto self

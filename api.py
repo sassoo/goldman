@@ -51,6 +51,9 @@ class API(falcon.API):
                 ('/logins', goldman.ModelsResource(LoginModel)),
                 ('/logins/{uuid}', goldman.ModelResource(LoginModel)),
             ]
+
+        This is the same format the native falcon `add_route`
+        method wants the routes.
         """
 
         for route in self.ROUTES:
@@ -83,7 +86,9 @@ class API(falcon.API):
             error['detail'] = error.pop('description')
 
         if 'link' in error:
-            error['link'] = {'about': error['link']['href']}
+            error['link'] = {
+                'about': error['link']['href']
+            }
 
         error = json.dumps({'errors': [error]})
 

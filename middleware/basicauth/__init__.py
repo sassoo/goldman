@@ -8,7 +8,6 @@
 
 import goldman.exceptions as exceptions
 
-from app.store import store
 from goldman.utils.error_handlers import abort
 from base64 import b64decode
 
@@ -16,6 +15,10 @@ from base64 import b64decode
 # pylint: disable=too-few-public-methods
 class Middleware(object):
     """ Ensure RFC compliance & authenticate the user. """
+
+    def __init__(self, validate_creds=None):
+
+        self.validate_creds = validate_creds
 
     # pylint: disable=unused-argument
     def process_request(self, req, resp):
@@ -41,15 +44,9 @@ class Middleware(object):
         if not username or not password:
             abort(exceptions.InvalidAuthSyntax)
 
-        login = self._get_login(username)
+        login = self.validate_creds(username, password)
 
-        if not login:
-            abort(exceptions.InvalidUsername)
-
-        elif login.gen_hash(password) != login.password:
-            abort(exceptions.InvalidPassword)
-
-        else:
+        if login:
             req.login = login
 
     @staticmethod
@@ -71,15 +68,6 @@ class Middleware(object):
             return None, None
 
         return username, password
-
-    @staticmethod
-    def _get_login(username):
-        """ Return the Login model from the database by username
-
-        :return: Login model or None
-        """
-
-        return store.search('logins', ('username', 'eq', username))
 
     @staticmethod
     def _validate_scheme(req):

@@ -121,6 +121,14 @@ class ResourceType(BaseType):
 
         super(ResourceType, self).__init__(**kwargs)
 
+    def to_native(self, value, context=None):
+        """ Schematics deserializer override """
+
+        if not value:
+            value = self.rtype
+
+        return value
+
     def validate_rtype(self, value):
         """ Schematics validator
 
