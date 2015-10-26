@@ -1,5 +1,5 @@
 """
-    Psycopg2.connect
+    postgres.connect
     ~~~~~~~~~~~~~~~~
 
     A convenience class to assist in creation of the
@@ -11,11 +11,8 @@ import psycopg2
 import psycopg2.extras
 
 
-__all__ = ['pg']
-
-
 class Connect(object):
-    """ Custom database object to be initialized on falcon start """
+    """ Custom psycopg2 connection object by the start """
 
     def __init__(self):
 
@@ -23,17 +20,14 @@ class Connect(object):
 
     @property
     def config(self):
-        """ Return the configuration as needed by neo.Graph() """
+        """ Return the configuration as needed """
 
         return goldman.config.PG_URL
 
     def connect(self):
-        """ Construct the py2neo Graph instance
+        """ Construct the psycopg2 connection instance
 
-        This will associate the graph instance with a specific URL
-        & thusly a database.
-
-        :return: py2neo.Graph instance
+        :return: psycopg2.connect instance
         """
 
         conn = psycopg2.connect(
@@ -44,7 +38,3 @@ class Connect(object):
         conn.set_session(autocommit=True)
 
         return conn
-
-
-# pylint: disable=invalid-name
-pg = Connect().conn

@@ -1,6 +1,6 @@
 """
-    resources.responders
-    ~~~~~~~~~~~~~~~~~~~~
+    responders
+    ~~~~~~~~~~
 
     An assortment of interfaces for composition or common
     methods across our responders by a logical grouping.

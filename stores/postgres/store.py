@@ -1,5 +1,5 @@
 """
-    Psycopg2.store
+    postgres.store
     ~~~~~~~~~~~~~~
 
     Interface with helper routines for persisting, finding,
@@ -8,7 +8,8 @@
 
 import goldman.exceptions as exceptions
 
-from ..Psycopg2.connect import pg
+from ..base import Store as BaseStore
+from ..postgres.connect import Connect
 from goldman.utils.error_handlers import abort
 
 
@@ -82,7 +83,7 @@ def pages_query(pages):
         return ''
 
 
-def sorts_query(sortables, alias=None):
+def sorts_query(sortables):
     """ Turn the Sortables into a SQL ORDER BY query """
 
     stmts = []
@@ -99,8 +100,13 @@ def sorts_query(sortables, alias=None):
         return ''
 
 
-class Store(object):
+class Store(BaseStore):
     """ PostgreSQL database store """
+
+    def __init__(self):
+        """ Initialize the connection object """
+
+        self.pg = Connect().conn  # pylint: disable=invalid-name
 
     @staticmethod
     def dirty_cols(model):
@@ -156,8 +162,7 @@ class Store(object):
 
         return cols or None
 
-    @staticmethod
-    def query(query, one=False, param=None):
+    def query(self, query, one=False, param=None):
         """ Perform a SQL based query
 
         This will abort on a failure to communicate with
@@ -168,7 +173,7 @@ class Store(object):
         :return: Record or RecordList from psycopg2
         """
 
-        with pg.cursor() as curs:
+        with self.pg.cursor() as curs:
             try:
                 curs.execute(query, param)
             except BaseException as exc:
