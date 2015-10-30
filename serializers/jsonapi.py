@@ -84,15 +84,15 @@ class Serializer(BaseSerializer):
         #     else:
         #         relationships[key] = serialize_to_one(val)
 
-        uuid = data.pop('uuid')
+        rid = data.pop('rid')
         rtype = data.pop('rtype')
 
         return {
-            'id': uuid,
+            'id': rid,
             'type': rtype,
             'attributes': data,
             'links': {
-                'self': url_for_model(rtype, uuid)
+                'self': url_for_model(rtype, rid)
             },
             # 'relationships': relationships
         }

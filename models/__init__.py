@@ -7,8 +7,10 @@
 """
 
 from ..models.base import Model as BaseModel
+from ..models.common import Model as CommonModel
 
 
 MODELS = [
-    BaseModel
+    BaseModel,
+    CommonModel,
 ]

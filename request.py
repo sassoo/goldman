@@ -1,49 +1,12 @@
 """
-    Falcon.request
-    ~~~~~~~~~~~~~~
+    request
+    ~~~~~~~
 
     Define our sub-classed Request object to be used instead of the
     native falcon Request object.
 """
 
 from falcon.request import Request as FalconRequest
-
-
-class Cache(object):
-    """ A very simple dictionary cache
-
-    This can be used to store any arbitrary data within the
-    context of a single request.
-    """
-
-    def __init__(self):
-
-        self._cache = {}
-
-    def get(self, key):
-        """ Get a cached item by key
-
-        If the cached item isn't found the return None.
-        """
-
-        try:
-            return self._cache[key]
-        except (KeyError, TypeError):
-            return None
-
-    def set(self, key, val):
-        """ Set a cached item by key
-
-        WARN: Regardless if the item is already in the cache,
-              it will be udpated with the new value.
-        """
-
-        self._cache[key] = val
-
-    def unload(self):
-        """ Purge the enture cache """
-
-        self._cache = {}
 
 
 class Request(FalconRequest):
@@ -53,7 +16,6 @@ class Request(FalconRequest):
 
         super(Request, self).__init__(*args, **kwargs)
 
-        self.cache = Cache()
         self.deserializer = None
         self.login = None
 
@@ -144,9 +106,9 @@ class Request(FalconRequest):
         If the request object doesn't claim to have a request body
         eg no content_length, then return None
 
-        WARNING: This could use a ton of memory so use it wisely.
-                 Images or bulk payloads should be read in more
-                 intelligently by the deserializer.
+        WARN: This could use a ton of memory so use it wisely.
+              Images or bulk payloads should be read in more
+              intelligently by the deserializer.
 
         :return: request payload as is
         """

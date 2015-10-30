@@ -12,7 +12,6 @@ from goldman.utils.error_handlers import abort
 from base64 import b64decode
 
 
-# pylint: disable=too-few-public-methods
 class Middleware(object):
     """ Ensure RFC compliance & authenticate the user. """
 
@@ -20,8 +19,7 @@ class Middleware(object):
 
         self.validate_creds = validate_creds
 
-    # pylint: disable=unused-argument
-    def process_request(self, req, resp):
+    def process_request(self, req, resp):  # pylint: disable=unused-argument
         """ Process the request before routing it.
 
         Per RFC 2617 section 3.2.1 an invalid Authorization header

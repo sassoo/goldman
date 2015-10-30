@@ -3,23 +3,23 @@
     ~~~
 
     This is where we initialize the falcon application.
-
-    We also need to register our own serializer for native
-    falcon HTTPError exceptions.
 """
+
+import threading
+
+sess = threading.local()  # pylint: disable=invalid-name
+
 
 from goldman.config import Config
 
-config = Config()
+config = Config()  # pylint: disable=invalid-name
 
 
 from goldman.deserializers import *
 from goldman.serializers import *
 
-from goldman.ext.Falcon import *
 from goldman.models import *
-from goldman.middleware import *
 from goldman.resources import *
 from goldman.responders import *
 
-from goldman.api import API
+from goldman.api import *

@@ -9,6 +9,8 @@ import goldman
 import falcon
 
 from ..resources.base import Resource as BaseResource
+from datetime import datetime as dt
+from uuid import uuid4
 
 
 class Resource(BaseResource):
@@ -23,10 +25,9 @@ class Resource(BaseResource):
         goldman.JSONAPISerializer,
     ]
 
-    def __init__(self, model, store):
+    def __init__(self, model):
 
         self.model = model
-        self.store = store
 
         super(Resource, self).__init__()
 
@@ -36,13 +37,13 @@ class Resource(BaseResource):
         We return an empty list if no models are found.
         """
 
-        crud = goldman.RestResponder(req, self.model)
+        responder = goldman.ModelResponder(self, req, resp)
 
-        models = store.search(self.model.rtype, **{
-            'filters': crud.filters,
-            'includes': crud.includes,
-            'pages': crud.pages,
-            'sorts': crud.sorts,
+        models = goldman.sess.store.search(self.model.rtype, **{
+            'filters': responder.filters,
+            'includes': responder.includes,
+            'pages': responder.pages,
+            'sorts': responder.sorts,
         })
 
         models = [m for m in models if m.acl_find(req.login)]
@@ -55,7 +56,15 @@ class Resource(BaseResource):
 
         responder = goldman.ModelResponder(self, req, resp)
         props = req.deserialize()
-        model = responder.create(props)
+        model = self.model()
+
+        model.created = dt.utcnow()
+        model.creator = goldman.sess.login
+        model.updated = dt.utcnow()
+        model.rid = str(uuid4())
+
+        responder.from_rest(model, props)
+        goldman.sess.store.create(model)
 
         resp.last_modified = model.updated
         resp.location = model.location

@@ -43,7 +43,9 @@ class Paginator(object):
 
     def __repr__(self):
 
-        return 'Paginator({}, {})'.format(self.limit, self.offset)
+        name = self.__class__.__name__
+
+        return '{}({}, {})'.format(name, self.limit, self.offset)
 
     def __str__(self):
 

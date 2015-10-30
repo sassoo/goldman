@@ -7,6 +7,7 @@
 """
 
 import goldman.exceptions as exceptions
+import goldman.signals as signals
 
 from ..base import Store as BaseStore
 from ..postgres.connect import Connect
@@ -26,87 +27,15 @@ FILTER_TABLE = {
 }
 
 
-def filters_query(filters):
-    """ Turn the tuple of filters into SQL WHERE statements
-
-    The key (column name) & operator have already been vetted
-    so they can be trusted but the value could still be evil
-    so it MUST be a parameterized input!
-
-    That is done by creating a param dict where they key name
-    & val look like:
-
-        '{}_{}'.format(key, oper): val
-
-    The key is constructed the way it is to ensure uniqueness,
-    if we just used the key name then it could get clobbered.
-
-    Ultimately the WHERE statement will look something lik:
-
-        age >= {age_gte}
-
-    where age_gte is the key name in the param dict with a
-    value of the evil user input. In the end, a string
-    statement & dict param are returned as a tuple if any
-    filters were provided otherwise None.
-
-    :return: tuple (string, dict)
-    """
-
-    param = {}
-    stmts = []
-
-    for filtr in filters:
-        key, oper, val = filtr
-
-        prop = '{0}_{1}'.format(key, oper)
-        oper = FILTER_TABLE[oper]
-
-        stmt = '{0} {1} %({2})s'.format(key, oper, prop)
-
-        param.update({prop: val})
-        stmts.append(stmt)
-
-    if stmts:
-        stmt = ' AND '.join(stmts)
-        stmt = ' WHERE {0}'.format(stmt)
-
-        return stmt, param
-
-
-def pages_query(pages):
-    """ Turn the tuple of pages into a SQL LIMIT/OFFSET query """
-
-    try:
-        return ' OFFSET {0} LIMIT {1}'.format(pages[0], pages[1])
-    except (IndexError, TypeError):
-        return ''
-
-
-def sorts_query(sortables):
-    """ Turn the Sortables into a SQL ORDER BY query """
-
-    stmts = []
-
-    for sortable in sortables:
-        if sortable.desc:
-            stmts.append('{0} DESC'.format(sortable))
-        else:
-            stmts.append('{0} ASC'.format(sortable))
-
-    if stmts:
-        return ' ORDER BY {0}'.format(', '.join(stmts))
-    else:
-        return ''
+conn = Connect().conn  # pylint: disable=invalid-name
 
 
 class Store(BaseStore):
     """ PostgreSQL database store """
 
     def __init__(self):
-        """ Initialize the connection object """
 
-        self.pg = Connect().conn  # pylint: disable=invalid-name
+        super(Store, self).__init__()
 
     @staticmethod
     def dirty_cols(model):
@@ -131,10 +60,10 @@ class Store(BaseStore):
         names in a format for psycopg to substitute with
         parameterized inputs.
 
-        An example, if the `uuid` & `created` fields are
+        An example, if the `rid` & `created` fields are
         dirty then they'll be converted into:
 
-            '%(uuid)s, %(created)s'
+            '%(rid)s, %(created)s'
 
         :return: str or None
         """
@@ -162,39 +91,79 @@ class Store(BaseStore):
 
         return cols or None
 
-    def query(self, query, one=False, param=None):
-        """ Perform a SQL based query
+    @staticmethod
+    def filters_query(filters):
+        """ Turn the tuple of filters into SQL WHERE statements
 
-        This will abort on a failure to communicate with
-        the database.
+        The key (column name) & operator have already been vetted
+        so they can be trusted but the value could still be evil
+        so it MUST be a parameterized input!
 
-        :query: string query
-        :params: parameters for the query
-        :return: Record or RecordList from psycopg2
+        That is done by creating a param dict where they key name
+        & val look like:
+
+            '{}_{}'.format(key, oper): val
+
+        The key is constructed the way it is to ensure uniqueness,
+        if we just used the key name then it could get clobbered.
+
+        Ultimately the WHERE statement will look something lik:
+
+            age >= {age_gte}
+
+        where age_gte is the key name in the param dict with a
+        value of the evil user input. In the end, a string
+        statement & dict param are returned as a tuple if any
+        filters were provided otherwise None.
+
+        :return: tuple (string, dict)
         """
 
-        with self.pg.cursor() as curs:
-            try:
-                curs.execute(query, param)
-            except BaseException as exc:
-                msg = 'Error executing {0} query with params {1} ' \
-                      ': {2}'.format(query, param, exc)
+        param = {}
+        stmts = []
 
-                print 'XXX HERE'
-                print msg
-                print exc.pgcode
-                print dir(exc.diag)
-                print type(exc.diag)
-                print exc.diag.constraint_name
-                print exc.diag.table_name
-                abort(exceptions.DatabaseUnavailable)
+        for filtr in filters:
+            key, oper, val = filtr
 
-            if one:
-                value = curs.fetchone()
+            prop = '{0}_{1}'.format(key, oper)
+            oper = FILTER_TABLE[oper]
+
+            stmt = '{0} {1} %({2})s'.format(key, oper, prop)
+
+            param.update({prop: val})
+            stmts.append(stmt)
+
+        if stmts:
+            stmt = ' AND '.join(stmts)
+            stmt = ' WHERE {0}'.format(stmt)
+
+            return stmt, param
+
+    @staticmethod
+    def pages_query(pages):
+        """ Turn the tuple of pages into a SQL LIMIT/OFFSET query """
+
+        try:
+            return ' OFFSET {0} LIMIT {1}'.format(pages[0], pages[1])
+        except (IndexError, TypeError):
+            return ''
+
+    @staticmethod
+    def sorts_query(sortables):
+        """ Turn the Sortables into a SQL ORDER BY query """
+
+        stmts = []
+
+        for sortable in sortables:
+            if sortable.desc:
+                stmts.append('{0} DESC'.format(sortable))
             else:
-                value = curs.fetchall()
+                stmts.append('{0} ASC'.format(sortable))
 
-        return value
+        if stmts:
+            return ' ORDER BY {0}'.format(', '.join(stmts))
+        else:
+            return ''
 
     @staticmethod
     def to_pg(model):
@@ -219,7 +188,11 @@ class Store(BaseStore):
             table=model.rtype,
         )
 
+        signals.pre_create.send(model.__class__, model=model)
+        signals.pre_save.send(model.__class__, model=model)
         result = self.query(query, one=True, param=param)
+        signals.post_create.send(model.__class__, model=model)
+        signals.post_save.send(model.__class__, model=model)
 
         return result
 
@@ -229,7 +202,7 @@ class Store(BaseStore):
         param = self.to_pg(model)
         query = """
                 DELETE FROM {table}
-                WHERE uuid = %(uuid)s
+                WHERE rid = %(rid)s
                 RETURNING {cols};
                 """
 
@@ -238,24 +211,28 @@ class Store(BaseStore):
             table=model.rtype,
         )
 
+        signals.pre_delete.send(model.__class__, model=model)
         result = self.query(query, one=True, param=param)
+        signals.post_delete.send(model.__class__, model=model)
 
         return result
 
-    def find(self, model, uuid):
-        """ Given a model class & uuid find the model
+    def find(self, model, key, val):
+        """ Given a model class & a single key/val find the model
 
-        An instantiated model object found by rtype value
+        A single instantiated model object found by the key/val
         will be returned if a match is found in the database.
         If no record can be found then return None.
+
+        WARN: This isn't for complex queries! Use search() instead.
 
         :return: model or None
         """
 
-        param = (uuid,)
+        param = {'key': key, 'val': val}
         query = """
                 SELECT {cols} FROM {table}
-                WHERE uuid = %s;
+                WHERE %(key)s = %(val)s;
                 """
 
         query = query.format(
@@ -263,10 +240,46 @@ class Store(BaseStore):
             table=model.RTYPE,
         )
 
-        value = self.query(query, one=True, param=param)
+        signals.pre_find.send(model.__class__, model=model)
 
+        value = self.query(query, one=True, param=param)
         if value:
             value = model(value)
+            signals.post_find.send(value.__class__, model=value)
+
+        return value
+
+    def query(self, query, one=False, param=None):
+        """ Perform a SQL based query
+
+        This will abort on a failure to communicate with
+        the database.
+
+        :query: string query
+        :params: parameters for the query
+        :return: Record or RecordList from psycopg2
+        """
+
+        with conn.cursor() as curs:
+            try:
+                curs.execute(query, param)
+            except BaseException as exc:
+                msg = 'Error executing {0} query with params {1} ' \
+                      ': {2}'.format(query, param, exc)
+
+                print 'XXX HERE'
+                print msg
+                print exc.pgcode
+                print dir(exc.diag)
+                print type(exc.diag)
+                print exc.diag.constraint_name
+                print exc.diag.table_name
+                abort(exceptions.DatabaseUnavailable)
+
+            if one:
+                value = curs.fetchone()
+            else:
+                value = curs.fetchall()
 
         return value
 
@@ -274,8 +287,8 @@ class Store(BaseStore):
         """ Search for the model by assorted criteria """
 
         param = {}
-        pages = pages_query(kwargs.get('pages'))
-        sorts = sorts_query(kwargs.get('sorts'))
+        pages = self.pages_query(kwargs.get('pages'))
+        sorts = self.sorts_query(kwargs.get('sorts'))
 
         query = 'SELECT {cols} FROM {table}'.format(
             cols=self.field_cols(model),
@@ -284,7 +297,7 @@ class Store(BaseStore):
 
         filters = kwargs.get('filters')
         if filters:
-            where, param = filters_query(filters)
+            where, param = self.filters_query(filters)
             query += where
 
         query += sorts
@@ -302,7 +315,7 @@ class Store(BaseStore):
         query = """
                 UPDATE {table}
                 SET ({dirty_cols}) = ({dirty_vals})
-                WHERE uuid = %(uuid)s
+                WHERE rid = %(rid)s
                 RETURNING {cols};
                 """
 
@@ -313,6 +326,10 @@ class Store(BaseStore):
             table=model.rtype,
         )
 
+        signals.pre_update.send(model.__class__, model=model)
+        signals.pre_save.send(model.__class__, model=model)
         result = self.query(query, one=True, param=param)
+        signals.post_update.send(model.__class__, model=model)
+        signals.post_save.send(model.__class__, model=model)
 
         return result

@@ -15,3 +15,11 @@ class Resource(object):
 
     DESERIALIZERS = []
     SERIALIZERS = []
+
+    def __init__(self):
+
+        if not self.DESERIALIZERS:
+            raise NotImplementedError('resource DESERIALIZERS required')
+
+        elif not self.SERIALIZERS:
+            raise NotImplementedError('resource SERIALIZERS required')

@@ -20,13 +20,13 @@ class Resource(BaseResource):
 
         self.model = model
 
-    def on_get(self, req, resp, uuid, related):
+    def on_get(self, req, resp, rid, related):
         """ Find the model by id & serialize it back
 
         We return a 404 if the model can't be found.
         """
 
-        related = self.model.find_related(uuid, related)
+        related = self.model.find_related(rid, related)
 
         related.acl_get(req.login)
         resp.serialize(related)

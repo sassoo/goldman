@@ -9,7 +9,7 @@
     Things like auth, logging, analytics, etc can go here.
 """
 
-# from app.middleware.basicauth import BasicAuth
+from ..middleware.basicauth import Middleware as BasicAuthMiddleware
 from ..middleware.deserializer import Middleware as DeserializerMiddleware
 from ..middleware.falcon_catcher import Middleware as FalconCatcherMiddleware
 from ..middleware.security import Middleware as SecurityMiddleware
@@ -17,6 +17,7 @@ from ..middleware.serializer import Middleware as SerializerMiddleware
 
 
 MIDDLEWARES = [
+    BasicAuthMiddleware,
     DeserializerMiddleware,
     FalconCatcherMiddleware,
     SecurityMiddleware,

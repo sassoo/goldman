@@ -53,7 +53,9 @@ class SparseField(object):
 
     def __repr__(self):
 
-        return 'SparseField(\'{}\', {})'.format(self.rtype, self.fields)
+        name = self.__class__.__name__
+
+        return '{}(\'{}\', {})'.format(name, self.rtype, self.fields)
 
     def __str__(self):
 

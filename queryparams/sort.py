@@ -65,7 +65,9 @@ class Sortable(object):
     def __repr__(self):
         """ Display the original sort with descending character """
 
-        return 'Sortable(\'{}\')'.format(self.raw_field)
+        name = self.__class__.__name__
+
+        return '{}(\'{}\')'.format(name, self.raw_field)
 
     def __str__(self):
         """ Display the original sort with descending character """

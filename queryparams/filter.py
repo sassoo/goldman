@@ -59,7 +59,10 @@ class Filter(object):
 
     def __repr__(self):
 
-        return 'Filter(\'{}\', \'{}\', \'{}\', neg={})'.format(
+        name = self.__class__.__name__
+
+        return '{}(\'{}\', \'{}\', \'{}\', neg={})'.format(
+            name,
             self.field,
             self.oper,
             self.val,
@@ -113,7 +116,9 @@ class FilterOr(object):
     def __repr__(self):
         """ Display the original sort with descending character """
 
-        return 'FilterOr({})'.format(self.exprs)
+        name = self.__class__.__name__
+
+        return '{}({})'.format(name, self.exprs)
 
     def __str__(self):
         """ Display the original sort with descending character """

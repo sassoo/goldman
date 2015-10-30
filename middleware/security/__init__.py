@@ -8,6 +8,7 @@
     This middleware should probably be hit as early as possible.
 """
 
+import goldman
 import goldman.exceptions as exceptions
 
 from goldman.utils.error_handlers import abort
@@ -15,10 +16,6 @@ from goldman.utils.error_handlers import abort
 
 class Middleware(object):
     """ Falcon error handler middleware """
-
-    def __init__(self, hpkp=None):
-
-        self.hpkp = hpkp
 
     # pylint: disable=unused-argument
     def process_request(self, req, resp):
@@ -44,10 +41,12 @@ class Middleware(object):
             XSS Protection: built in reflective XSS protection
         """
 
-        if self.hpkp:
+        hpkp = goldman.config.HPKP
+
+        if hpkp:
             resp.set_header(
                 'Public-Key-Pins',
-                '{}; includeSubdomains; max-age=31536000'.format(self.hpkp),
+                '{}; includeSubdomains; max-age=31536000'.format(hpkp),
             )
 
         resp.set_header(

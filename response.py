@@ -1,6 +1,6 @@
 """
-    Falcon.response
-    ~~~~~~~~~~~~~~~
+    response
+    ~~~~~~~~
 
     Define our sub-classed Response object to be used instead of the
     native falcon Response object.

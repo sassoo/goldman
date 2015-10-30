@@ -12,6 +12,18 @@ import falcon
 import goldman
 import json
 
+from goldman.middleware import (
+    DeserializerMiddleware,
+    FalconCatcherMiddleware,
+    SecurityMiddleware,
+    SerializerMiddleware,
+)
+from goldman.request import Request
+from goldman.response import Response
+
+
+__all__ = ['API']
+
 
 class API(falcon.API):
     """ Subclass the falcon.API object with our own
@@ -23,17 +35,24 @@ class API(falcon.API):
     MIDDLEWARE = []
     ROUTES = []
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
+
+        middleware = [
+            SecurityMiddleware,
+            FalconCatcherMiddleware,
+            DeserializerMiddleware,
+            SerializerMiddleware,
+        ]
+        middleware += self.MIDDLEWARE
 
         super(API, self).__init__(
-            middleware=self.MIDDLEWARE,
-            request_type=goldman.Request,
-            response_type=goldman.Response,
-            *args, **kwargs
+            middleware=middleware,
+            request_type=Request,
+            response_type=Response,
         )
 
         self._load_routes()
-        self.set_error_serializer(self._serialize_error)
+        self.set_error_serializer(self._error_serializer)
 
     def _load_routes(self):
         """ Load all the routes.
@@ -49,7 +68,7 @@ class API(falcon.API):
 
             ROUTES = [
                 ('/logins', goldman.ModelsResource(LoginModel)),
-                ('/logins/{uuid}', goldman.ModelResource(LoginModel)),
+                ('/logins/{rid}', goldman.ModelResource(LoginModel)),
             ]
 
         This is the same format the native falcon `add_route`
@@ -60,7 +79,7 @@ class API(falcon.API):
             self.add_route(*route)
 
     @staticmethod
-    def _serialize_error(*args):
+    def _error_serializer(req, exc):  # pylint: disable=unused-argument
         """ Serializer for native falcon HTTPError exceptions.
 
         We override the default serializer with our own so we can
@@ -80,7 +99,7 @@ class API(falcon.API):
             (MIMETYPE, BODY PAYLOAD)
         """
 
-        error = args[1].to_dict()
+        error = exc.to_dict()
 
         if 'description' in error:
             error['detail'] = error.pop('description')

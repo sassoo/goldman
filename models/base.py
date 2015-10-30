@@ -2,122 +2,170 @@
     models.base
     ~~~~~~~~~~~
 
-    Our base model for sub-classing.
+    Our schematics sub-classed model required by all models
+    that use any of our goldman native stores.
+
+    This is required when creating any models that use
+    any goldman stores. The API on this model is expected
+    to be available on every model being pushed through or
+    pulled from a store.
 """
 
-from goldman.ext.Schematics.model import Model as BaseSchematicsModel
-from goldman.ext.Schematics.types import DateTimeType, ToOneType
-from goldman.utils.url_helpers import url_for_model
-from schematics.types import StringType
+import goldman.exceptions as exceptions
+
+from goldman.types import ToOneType
+from goldman.utils.decorators import classproperty
+from schematics.exceptions import ConversionError
+from schematics.models import Model as _SchematicsModel
+from schematics.types import EmailType
 
 
-class Model(BaseSchematicsModel):
-    """ Base model to be extended by the database mixins """
+__all__ = ['Model']
 
-    creator = ToOneType(
-        from_rest=False,
-        rtype='logins',
-    )
 
-    created = DateTimeType(from_rest=False)
-    updated = DateTimeType(from_rest=False)
+class Model(_SchematicsModel):
+    """ Our schematics sub-classed model """
 
-    uuid = StringType(
-        from_rest=False,
-        unique=True
-    )
+    def __init__(self, data=None, **kwargs):
+
+        super(Model, self).__init__(data, **kwargs)
+
+        try:
+            self._original = self.to_native()
+        except BaseException:
+            self._original = {}
+
+    @classproperty
+    def all_fields(cls):  # NOQA
+        """ Return a list of all the fields """
+
+        fields = getattr(cls, '_fields')
+
+        return fields.keys()
+
+    @classproperty
+    def indexed_fields(cls):  # NOQA
+        """ Return a list of all the indexed fields """
+
+        return cls.get_fields_by_prop('index', True)
+
+    @classproperty
+    def relationships(cls):  # NOQA
+        """ Return a list of all the fields that are relationships """
+
+        return cls.to_manys + cls.to_ones
+
+    @classproperty
+    def to_lowers(cls):  # NOQA
+        """ Return a list of all the fields that should be lowercased
+
+        This is done on fields with `lower=True`.
+        """
+
+        email = cls.get_fields_by_class(EmailType)
+        lower = cls.get_fields_by_prop('lower', True) + email
+
+        return list(set(email + lower))
+
+    @classproperty
+    def to_manys(cls):  # NOQA
+        """ Return a list of all the ToMany field types """
+
+        return cls.get_fields_by_class(ToOneType)
+
+    @classproperty
+    def to_ones(cls):  # NOQA
+        """ Return a list of all the ToOne field types """
+
+        return cls.get_fields_by_class(ToOneType)
+
+    @classproperty
+    def unique_fields(cls):  # NOQA
+        """ Return a list of all the fields with unique constraints """
+
+        return cls.get_fields_by_prop('unique', True)
+
+    @classmethod
+    def get_fields_by_class(cls, field_class):
+        """ Return a list of field names matching a field class
+
+        :param field_class: field class object
+        :return: list
+        """
+
+        ret = []
+
+        for key, val in getattr(cls, '_fields').items():
+            if isinstance(val, field_class):
+                ret.append(key)
+
+        return ret
+
+    @classmethod
+    def get_fields_by_prop(cls, prop_key, prop_val):
+        """ Return a list of field names matching a prop key / val
+
+        :param prop_key: key name
+        :param prop_val: value
+        :return: list
+        """
+
+        ret = []
+
+        for key, val in getattr(cls, '_fields').items():
+            if hasattr(val, prop_key) and getattr(val, prop_key) == prop_val:
+                ret.append(key)
+
+        return ret
+
+    @classmethod
+    def to_exceptions(cls, errors):
+        """ Convert the validation errors into our exceptions
+
+        Errors should be in the same exact format as they are
+        when schematics returns them.
+
+        :param errors: dict of errors in schematics format
+        """
+
+        ret = []
+
+        for key, val in errors.items():
+            attr = '/data/attributes/%s' % key
+
+            if key in cls.relationships:
+                attr = '/data/relationships/%s' % key
+
+            for error in val:
+                ret.append(exceptions.ValidationFailure(attr, detail=error))
+
+        return ret
 
     @property
-    def location(self):
-        """ Return a string relative URL of the model """
+    def dirty_fields(self):
+        """ Return an array of field names that are dirty
 
-        rtype = getattr(self, 'rtype')
+        Dirty means if a model was hydrated first from the
+        store & then had field values changed they are now
+        considered dirty.
 
-        return url_for_model(rtype, self.uuid)
+        For new models all fields are considered dirty.
 
-    """
-    Model creation methods
-    """
+        :return: list
+        """
 
-    # pylint: disable=unused-argument
-    def acl_create(self, login):
-        """ ACL callback check during model creation """
+        dirty_fields = []
 
-        return True
+        try:
+            current = self.to_native()
+        except ConversionError:
+            current = {}
 
-    def pre_create(self):
-        """ Callback before creating a new model """
+        for key, val in current.items():
+            if key not in self._original:
+                dirty_fields.append(key)
 
-        pass
+            elif self._original[key] != val:
+                dirty_fields.append(key)
 
-    def post_create(self):
-        """ Callback after creating a new model """
-
-        pass
-
-    """
-    Model deletion methods
-    """
-
-    # pylint: disable=unused-argument
-    def acl_delete(self, login):
-        """ ACL callback check during model creation """
-
-        return True
-
-    def pre_delete(self):
-        """ Callback before deleting an existing model """
-
-        pass
-
-    def post_delete(self):
-        """ Callback after deleting an existing model """
-
-        pass
-
-    """
-    Model finding methods
-    """
-
-    def acl_find(self, login):
-        """ ACL callback check during model finding """
-
-        return True
-
-    """
-    Model save methods
-    """
-
-    def acl_save(self, login):
-        """ ACL callback check during any model save """
-
-        return True
-
-    def pre_save(self):
-        """ Callback before saving any model """
-
-        pass
-
-    def post_save(self):
-        """ Callback after saving any model """
-
-        pass
-
-    """
-    Model update methods
-    """
-
-    def acl_update(self, login):
-        """ ACL callback check during model modification """
-
-        return True
-
-    def pre_update(self):
-        """ Callback before updating an existing model """
-
-        pass
-
-    def post_update(self):
-        """ Callback after updating an existing model """
-
-        pass
+        return dirty_fields

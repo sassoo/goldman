@@ -29,15 +29,15 @@ def url_for_rtype(rtype):
     return '{}/{}'.format(goldman.config.BASE_URL, rtype)
 
 
-def url_for_model(rtype, uuid):
+def url_for_model(rtype, rid):
     """ Return a string relative URL for a model
 
     :param rtype:
         string resource type name of the model
-    :param uuid:
-        string uuid of the single model
+    :param rid:
+        string rid of the single model
     :return:
         relative string URL
     """
 
-    return '{}/{}'.format(url_for_rtype(rtype), uuid)
+    return '{}/{}'.format(url_for_rtype(rtype), rid)

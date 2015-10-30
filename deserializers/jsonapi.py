@@ -33,7 +33,7 @@ class Normalizer(object):
 
             1) Add the type as a resource property
             2) Flatten the payload
-            3) Add the id as a uuid property ONLY if present
+            3) Add the id as a rid property ONLY if present
 
         We don't need to vet the inputs much because the
         Parser has already done all the work.
@@ -57,7 +57,7 @@ class Normalizer(object):
             data.update(relationships)
 
         if resource.get('id'):
-            data['uuid'] = resource['id']
+            data['rid'] = resource['id']
 
         return data
 
@@ -89,7 +89,7 @@ class Normalizer(object):
             else:
                 ret[key] = {
                     'rtype': val['data']['type'],
-                    'uuid': val['data']['id'],
+                    'rid': val['data']['id'],
                 }
 
         return ret
@@ -195,14 +195,14 @@ class Parser(object):
 
         link = 'jsonapi.org/format/#document-resource-objects'
 
-        uuid = resource.get('id')
+        rid = resource.get('id')
         rtype = resource.get('type')
 
         if not rtype:
             fail('JSON API requires that every resource object MUST '
                  'contain a `type` top-level key.', link)
 
-        elif req.is_patching and not isinstance(uuid, unicode):
+        elif req.is_patching and not isinstance(rid, unicode):
             fail('JSON API requires the resource object `id` & '
                  '`type` fields be strings.', link)
 
@@ -215,7 +215,7 @@ class Parser(object):
                  'minimum an attributes object and/or relationship '
                  'object.', link)
 
-        if uuid and req.is_posting:
+        if rid and req.is_posting:
             abort(exceptions.ModificationDenied(**{
                 'detail': 'We do not support client-generated ID\'s',
                 'links': 'jsonapi.org/format/#crud-creating-client-ids'
