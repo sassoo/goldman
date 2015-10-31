@@ -13,7 +13,7 @@ import goldman
 class Serializer(object):
     """ JSON compliant serializer """
 
-    MIMETYPE = goldman.config.JSON_MIMETYPE
+    MIMETYPE = goldman.JSON_MIMETYPE
 
     def serialize(self, obj):
         """ Foobar """

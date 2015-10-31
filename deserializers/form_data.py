@@ -14,7 +14,7 @@ from ..deserializers.base import Deserializer as BaseDeserializer
 class Deserializer(BaseDeserializer):
     """ form-data deserializer """
 
-    MIMETYPE = goldman.config.FILEUPLOAD_MIMETYPE
+    MIMETYPE = goldman.FILEUPLOAD_MIMETYPE
 
     def deserialize(self, req, data):
         """ Foobar """

@@ -12,7 +12,7 @@ import goldman
 import falcon
 
 from ..resources.base import Resource as BaseResource
-from datetime import datetime as dt
+from goldman.utils.url_helpers import url_for_model
 
 
 class Resource(BaseResource):
@@ -30,6 +30,7 @@ class Resource(BaseResource):
     def __init__(self, model):
 
         self.model = model
+        self.rtype = model.RTYPE
 
         super(Resource, self).__init__()
 
@@ -41,7 +42,7 @@ class Resource(BaseResource):
         """
 
         responder = goldman.ModelResponder(self, req, resp)
-        model = responder.find(rid)
+        model = responder.find(self.rtype, rid)
 
         goldman.sess.store.delete(model)
 
@@ -51,10 +52,10 @@ class Resource(BaseResource):
         """ Find the model by id & serialize it back """
 
         responder = goldman.ModelResponder(self, req, resp)
-        model = responder.find(rid)
+        model = responder.find(self.rtype, rid)
 
         resp.last_modified = model.updated
-        resp.location = model.location
+        resp.location = url_for_model(model.rtype, model.rid)
 
         resp.serialize(responder.to_rest(model))
 
@@ -63,14 +64,12 @@ class Resource(BaseResource):
 
         responder = goldman.ModelResponder(self, req, resp)
         props = req.deserialize()
-        model = responder.find(rid)
+        model = responder.find(self.rtype, rid)
 
-        model.updated = dt.utcnow()
         responder.from_rest(model, props)
-
         goldman.sess.store.update(model)
 
         resp.last_modified = model.updated
-        resp.location = model.location
+        resp.location = url_for_model(model.rtype, model.rid)
 
         resp.serialize(responder.to_rest(model))

@@ -2,71 +2,71 @@
     types.to_one
     ~~~~~~~~~~~~
 
-    schematics datetime type
+    schematics to_one type
 
-    This should be used instead of the native schematics datetime
-    type. It supports epoch serialization/deserialization in addition
-    to the default behavior.
+    This should be used when defining a many-to-one or one-to-one
+    relationship.
 """
 
-from goldman.utils.str_helpers import str_to_uuid
-from schematics.exceptions import (
-    ConversionError,
-    ValidationError
-)
-from schematics.types import BaseType
+import goldman
+
+from schematics.exceptions import ValidationError
+from schematics.types import StringType
 
 
-class ToOneType(BaseType):
+class ToOneProxy(object):
+    """ Lazy loading proxy object for to-one relationships """
+
+    def __init__(self, rtype, rid):
+
+        self._model = None
+        self._resolved = False
+        self.rid = rid
+        self.rtype = rtype
+
+        self._initialized = True
+
+    # def _load(self):
+    #     """ Load the model from the database """
+
+    #     if self.rid:
+    #         store = goldman.sess.store
+    #         model = store.find(self.rtype, 'rid', self.rid)
+
+    #         self._model, self._resolved = model, True
+
+    def __getattr__(self, name):
+
+        if not hasattr(self, name) and not self._resolved:
+            self._load()
+
+        return getattr(self._model, name)
+
+
+class ToOneType(StringType):
     """ Custom field for our ToOne relationships """
 
     MESSAGES = {
-        'rtype': 'resource type must be {0} not {1}',
-        'uuid': 'id is not a valid UUID string'
+        'exists': 'resource can not be found'
     }
 
     def __init__(self, rtype, **kwargs):
+
         self.rtype = rtype
-        # self.uuid = uuid
 
         super(ToOneType, self).__init__(**kwargs)
 
-    def to_native(self, value, context=None):
-        """ Schematics deserializer override
+    def validate_exists(self, value):
+        """ Schematics validator
 
-        :return: model object
+        The resource id provided must exist in the database
         """
 
-        # must be a model object already
-        if value and not isinstance(value, dict):
-            return value
-
-        try:
-            if value and value['rtype'] != self.rtype:
-                raise ValueError
-
-            elif value:
-                # value = get_model_by_rtype(value['rtype'])
-
-                if not value:
-                    raise ValueError
-        except ValueError:
-            raise ConversionError(self.messages['rtype']).format(
-                self.rtype,
-                value['rtype'],
-            )
-
-        value.uuid = value['uuid']
-
-        return value
-
-    def validate_uuid(self, value):
-        """ Schematics validator """
-
         if value:
-            try:
-                str_to_uuid(value)
-            except ValueError:
-                raise ValidationError(self.messages['uuid'])
+            store = goldman.sess.store
+            model = store.find(self.rtype, 'rid', value)
+
+            if not model:
+                raise ValidationError(self.messages['exists'])
 
         return value

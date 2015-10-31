@@ -24,8 +24,8 @@ class Middleware(object):
         We always enforce the use of SSL.
         """
 
-        if req.protocol != 'https':
-            abort(exceptions.SSLRequired)
+        if goldman.config.TLS_REQUIRED and req.protocol != 'https':
+            abort(exceptions.TLSRequired)
 
     def process_response(self, req, resp, resource):
         """ Post-processing of the response (after routing).

@@ -13,7 +13,7 @@
 
 import goldman.exceptions as exceptions
 
-from goldman.types import ToOneType
+from goldman.types.to_one import ToOneType
 from goldman.utils.decorators import classproperty
 from schematics.exceptions import ConversionError
 from schematics.models import Model as _SchematicsModel

@@ -97,13 +97,13 @@ class Responder(object):
             model class (not instance)
         """
 
-        self._model = resource.model
+        model = resource.model
 
         # declare these here instead of in each query
         # param since they are a bit expensive.
-        fields = self._model.all_fields
-        rels = self._model.relationships
-        rtype = self._model.RTYPE
+        fields = model.all_fields
+        rels = model.relationships
+        rtype = model.RTYPE
 
         self.fields = qp_fields.from_req(req, rtype, fields)
         self.filters = qp_filter.from_req(req, fields)
@@ -111,10 +111,10 @@ class Responder(object):
         self.pages = qp_page.from_req(req)
         self.sorts = qp_sort.from_req(req, fields, rels)
 
-    def find(self, rid):
+    def find(self, rtype, rid):
         """ Find a model from the store by resource id """
 
-        model = goldman.sess.store.find(self._model, 'rid', rid)
+        model = goldman.sess.store.find(rtype, 'rid', rid)
 
         if not model:
             abort(exceptions.DocumentNotFound)
@@ -144,6 +144,8 @@ class Responder(object):
         for key, val in props.items():
             setattr(model, key, val)
 
+        print goldman.sess.login
+        print model.to_primitive()
         try:
             model.validate()
         except ModelValidationError as errors:

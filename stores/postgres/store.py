@@ -12,6 +12,10 @@ import goldman.signals as signals
 from ..base import Store as BaseStore
 from ..postgres.connect import Connect
 from goldman.utils.error_handlers import abort
+from goldman.utils.model_helpers import rtype_to_model
+
+
+CONNECT = Connect()
 
 
 FILTER_TABLE = {
@@ -27,13 +31,56 @@ FILTER_TABLE = {
 }
 
 
-conn = Connect().conn  # pylint: disable=invalid-name
+VALIDATION_ERRORS_TABLE = {
+    '23505': '{} must be unique',
+}
+
+
+def col_from_exc(exc):
+    """ Derive the column name from the database exception
+
+    The postgres diagnostics interface will return a
+    `constraint_name` which consists of a str formatted:
+
+        <table_name>_<column_name>_key
+
+    The middle string `column_name` is what this function
+    returns.
+
+    :param exc: psycopg2 exception
+    :return: str
+    """
+
+    return exc.diag.constraint_name.split('_')[1]
+
+
+def handle_exc(exc):
+    """ Given a database exception determine how to fail
+
+    Attempt to lookup a known error & abort on a meaningful
+    error. Otherwise issue a generic DatabaseUnavailable exception.
+
+    :param exc: psycopg2 exception
+    """
+
+    if exc.pgcode:
+        err = VALIDATION_ERRORS_TABLE.get(exc.pgcode)
+
+        if err:
+            col = col_from_exc(exc)
+            err = err.format(col)
+
+            abort(exceptions.ValidationFailure(col, detail=err))
+
+    abort(exceptions.DatabaseUnavailable)
 
 
 class Store(BaseStore):
     """ PostgreSQL database store """
 
     def __init__(self):
+
+        self.conn = CONNECT.connect()
 
         super(Store, self).__init__()
 
@@ -174,6 +221,11 @@ class Store(BaseStore):
     def create(self, model):
         """ Given a model object instance create it """
 
+        signals.pre_create.send(model.__class__, model=model)
+        signals.acl_create.send(model.__class__, model=model)
+        signals.pre_save.send(model.__class__, model=model)
+        signals.acl_save.send(model.__class__, model=model)
+
         param = self.to_pg(model)
         query = """
                 INSERT INTO {table} ({dirty_cols})
@@ -188,9 +240,8 @@ class Store(BaseStore):
             table=model.rtype,
         )
 
-        signals.pre_create.send(model.__class__, model=model)
-        signals.pre_save.send(model.__class__, model=model)
         result = self.query(query, one=True, param=param)
+
         signals.post_create.send(model.__class__, model=model)
         signals.post_save.send(model.__class__, model=model)
 
@@ -198,6 +249,9 @@ class Store(BaseStore):
 
     def delete(self, model):
         """ Given a model object instance delete it """
+
+        signals.pre_delete.send(model.__class__, model=model)
+        signals.acl_delete.send(model.__class__, model=model)
 
         param = self.to_pg(model)
         query = """
@@ -211,14 +265,14 @@ class Store(BaseStore):
             table=model.rtype,
         )
 
-        signals.pre_delete.send(model.__class__, model=model)
         result = self.query(query, one=True, param=param)
+
         signals.post_delete.send(model.__class__, model=model)
 
         return result
 
-    def find(self, model, key, val):
-        """ Given a model class & a single key/val find the model
+    def find(self, rtype, key, val):
+        """ Given a resource type & a single key/val find the model
 
         A single instantiated model object found by the key/val
         will be returned if a match is found in the database.
@@ -229,18 +283,21 @@ class Store(BaseStore):
         :return: model or None
         """
 
+        model = rtype_to_model(rtype)
         param = {'key': key, 'val': val}
         query = """
                 SELECT {cols} FROM {table}
-                WHERE %(key)s = %(val)s;
+                WHERE {key} = %(val)s;
                 """
 
         query = query.format(
             cols=self.field_cols(model),
-            table=model.RTYPE,
+            key=key,
+            table=rtype,
         )
 
         signals.pre_find.send(model.__class__, model=model)
+        signals.acl_find.send(model.__class__, model=model)
 
         value = self.query(query, one=True, param=param)
         if value:
@@ -260,21 +317,15 @@ class Store(BaseStore):
         :return: Record or RecordList from psycopg2
         """
 
-        with conn.cursor() as curs:
+        with self.conn.cursor() as curs:
             try:
                 curs.execute(query, param)
             except BaseException as exc:
-                msg = 'Error executing {0} query with params {1} ' \
-                      ': {2}'.format(query, param, exc)
+                msg = 'Error executing {} query with params {} : ' \
+                      '{}. Error code {}'.format(query, param, exc, exc.pgcode)
 
-                print 'XXX HERE'
                 print msg
-                print exc.pgcode
-                print dir(exc.diag)
-                print type(exc.diag)
-                print exc.diag.constraint_name
-                print exc.diag.table_name
-                abort(exceptions.DatabaseUnavailable)
+                handle_exc(exc)
 
             if one:
                 value = curs.fetchone()
@@ -311,6 +362,11 @@ class Store(BaseStore):
     def update(self, model):
         """ Given a model object instance update it """
 
+        signals.pre_update.send(model.__class__, model=model)
+        signals.acl_update.send(model.__class__, model=model)
+        signals.pre_save.send(model.__class__, model=model)
+        signals.acl_save.send(model.__class__, model=model)
+
         param = self.to_pg(model)
         query = """
                 UPDATE {table}
@@ -326,9 +382,8 @@ class Store(BaseStore):
             table=model.rtype,
         )
 
-        signals.pre_update.send(model.__class__, model=model)
-        signals.pre_save.send(model.__class__, model=model)
         result = self.query(query, one=True, param=param)
+
         signals.post_update.send(model.__class__, model=model)
         signals.post_save.send(model.__class__, model=model)
 

@@ -14,6 +14,7 @@ from ..middleware.deserializer import Middleware as DeserializerMiddleware
 from ..middleware.falcon_catcher import Middleware as FalconCatcherMiddleware
 from ..middleware.security import Middleware as SecurityMiddleware
 from ..middleware.serializer import Middleware as SerializerMiddleware
+from ..middleware.threadlocal import Middleware as ThreadLocalMiddleware
 
 
 MIDDLEWARES = [
@@ -22,4 +23,5 @@ MIDDLEWARES = [
     FalconCatcherMiddleware,
     SecurityMiddleware,
     SerializerMiddleware,
+    ThreadLocalMiddleware,
 ]

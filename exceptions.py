@@ -273,20 +273,20 @@ class ReadDenied(APIException):
         })
 
 
-class SSLRequired(APIException):
-    """ The API requires SSL security """
+class TLSRequired(APIException):
+    """ The API requires TLS (SSL) security """
 
-    DETAIL = 'The URL requested (route) requires https (SSL). ' \
+    DETAIL = 'The URL requested (route) requires https (TLS). ' \
              'Any other protocols are not allowed. Please retry ' \
              'your request using https.'
 
     def __init__(self, **kwargs):
-        super(SSLRequired, self).__init__(**{
+        super(TLSRequired, self).__init__(**{
             'code': 'ssl_required',
             'detail': self.DETAIL,
             'links': 'en.wikipedia.org/wiki/HTTPS',
             'status': falcon.HTTP_403,
-            'title': 'SSL is required',
+            'title': 'TLS is required',
         })
 
 

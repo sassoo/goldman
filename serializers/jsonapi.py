@@ -18,7 +18,7 @@ from ..serializers.base import Serializer as BaseSerializer
 class Serializer(BaseSerializer):
     """ JSON API compliant serializer """
 
-    MIMETYPE = goldman.config.JSONAPI_MIMETYPE
+    MIMETYPE = goldman.JSONAPI_MIMETYPE
 
     def serialize(self, resp, data):
         """ Determine & invoke the proper serializer method

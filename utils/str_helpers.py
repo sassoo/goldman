@@ -65,6 +65,6 @@ def str_to_uuid(val):
         return val
 
     try:
-        return uuid.UUID(val, version=4)
+        return uuid.UUID(str(val), version=4)
     except (AttributeError, ValueError):
         raise ValueError

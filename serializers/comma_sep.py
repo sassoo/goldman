@@ -13,7 +13,7 @@ from ..serializers.base import Serializer as BaseSerializer
 class Serializer(BaseSerializer):
     """ CSV serializer """
 
-    MIMETYPE = goldman.config.CSV_MIMETYPE
+    MIMETYPE = goldman.CSV_MIMETYPE
 
     def serialize(self, resp, data):
         """ Determine & invoke the proper serializer method

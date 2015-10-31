@@ -21,6 +21,7 @@ class ResourceType(StringType):
     }
 
     def __init__(self, rtype, **kwargs):
+
         self.rtype = rtype
 
         super(ResourceType, self).__init__(**kwargs)

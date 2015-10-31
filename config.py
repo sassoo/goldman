@@ -21,12 +21,6 @@ class Config(object):
     private & not attached to the Config object.
     """
 
-    # Content-Types
-    CSV_MIMETYPE = 'text/csv'
-    FILEUPLOAD_MIMETYPE = 'multipart/form-data'
-    JSON_MIMETYPE = 'application/json'
-    JSONAPI_MIMETYPE = 'application/vnd.api+json'
-
     # JSON API
     JSONAPI_VERSION = '1.0'
 
@@ -46,6 +40,9 @@ class Config(object):
 
     # Query sort preference
     SORT = 'created'
+
+    # Security stuff
+    TLS_REQUIRED = True
 
     # URL prefix for the API
     BASE_URL = '/api'
@@ -77,6 +74,6 @@ class Config(object):
         """
 
         try:
-            return getattr(self, name)
+            return super(Config).__getattr__(name)
         except AttributeError:
             return None

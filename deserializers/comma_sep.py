@@ -90,7 +90,7 @@ class Parser(object):
 class Deserializer(BaseDeserializer):
     """ CSV deserializer """
 
-    MIMETYPE = goldman.config.CSV_MIMETYPE
+    MIMETYPE = goldman.CSV_MIMETYPE
 
     def deserialize(self, req, data=None):
         """ Invoke the deserializer

@@ -245,7 +245,7 @@ class Parser(object):
 class Deserializer(BaseDeserializer):
     """ JSON API compliant deserializer """
 
-    MIMETYPE = goldman.config.JSONAPI_MIMETYPE
+    MIMETYPE = goldman.JSONAPI_MIMETYPE
 
     def deserialize(self, req, data=None):
         """ Invoke the deserializer

@@ -81,7 +81,7 @@ class Serializer(HTTPStatus):
         FIX: duplicate headers will collide terribly!
         """
 
-        headers = {'Content-Type': goldman.config.JSONAPI_MIMETYPE}
+        headers = {'Content-Type': goldman.JSONAPI_MIMETYPE}
 
         for error in self.errors:
             if 'headers' in error:

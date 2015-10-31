@@ -9,8 +9,7 @@ import goldman
 import falcon
 
 from ..resources.base import Resource as BaseResource
-from datetime import datetime as dt
-from uuid import uuid4
+from goldman.utils.url_helpers import url_for_model
 
 
 class Resource(BaseResource):
@@ -28,6 +27,7 @@ class Resource(BaseResource):
     def __init__(self, model):
 
         self.model = model
+        self.rtype = model.RTYPE
 
         super(Resource, self).__init__()
 
@@ -58,16 +58,11 @@ class Resource(BaseResource):
         props = req.deserialize()
         model = self.model()
 
-        model.created = dt.utcnow()
-        model.creator = goldman.sess.login
-        model.updated = dt.utcnow()
-        model.rid = str(uuid4())
-
         responder.from_rest(model, props)
         goldman.sess.store.create(model)
 
         resp.last_modified = model.updated
-        resp.location = model.location
+        resp.location = url_for_model(model.rtype, model.rid)
         resp.status = falcon.HTTP_201
 
         resp.serialize(responder.to_rest(model))

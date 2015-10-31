@@ -16,7 +16,7 @@ class Connect(object):
 
     def __init__(self):
 
-        self.conn = self.connect()
+        self._conn = None
 
     @property
     def config(self):
@@ -30,11 +30,14 @@ class Connect(object):
         :return: psycopg2.connect instance
         """
 
-        conn = psycopg2.connect(
+        if self._conn:
+            return self._conn
+
+        self._conn = psycopg2.connect(
             self.config,
             cursor_factory=psycopg2.extras.RealDictCursor,
         )
 
-        conn.set_session(autocommit=True)
+        self._conn.set_session(autocommit=True)
 
-        return conn
+        return self._conn
