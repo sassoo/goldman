@@ -11,7 +11,7 @@
 import goldman
 import json
 
-from goldman.utils.url_helpers import url_for_model
+from goldman.utils.url_helpers import rid_url
 from ..serializers.base import Serializer as BaseSerializer
 
 
@@ -69,6 +69,14 @@ class Serializer(BaseSerializer):
         :return: dict
         """
 
+        rid = data.pop('rid')
+        rtype = data.pop('rtype')
+
+        rlink = rid_url(rtype, rid)
+
+        # for to_one in data['to_ones'].items():
+        #     self._serialize_to_one(to_one)
+
         # relationships = {}
         # to_ones = model.to_ones
 
@@ -84,15 +92,12 @@ class Serializer(BaseSerializer):
         #     else:
         #         relationships[key] = serialize_to_one(val)
 
-        rid = data.pop('rid')
-        rtype = data.pop('rtype')
-
         return {
             'id': rid,
             'type': rtype,
             'attributes': data,
             'links': {
-                'self': url_for_model(rtype, rid)
+                'self': rlink,
             },
             # 'relationships': relationships
         }

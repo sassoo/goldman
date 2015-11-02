@@ -42,10 +42,7 @@ class Middleware(object):
         if not username or not password:
             abort(exceptions.InvalidAuthSyntax)
 
-        login = self.validate_creds(username, password)
-
-        if login:
-            req.login = login
+        req.login = self.validate_creds(username, password)
 
     @staticmethod
     def _get_creds(req):

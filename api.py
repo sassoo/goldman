@@ -12,13 +12,6 @@ import falcon
 import goldman
 import json
 
-from goldman.middleware import (
-    DeserializerMiddleware,
-    FalconCatcherMiddleware,
-    SecurityMiddleware,
-    SerializerMiddleware,
-    ThreadLocalMiddleware,
-)
 from goldman.request import Request
 from goldman.response import Response
 
@@ -39,11 +32,11 @@ class API(falcon.API):
     def __init__(self):
 
         middleware = [
-            SecurityMiddleware(),
-            FalconCatcherMiddleware(),
-            DeserializerMiddleware(),
-            SerializerMiddleware(),
-            ThreadLocalMiddleware(),
+            goldman.SecurityMiddleware(),
+            goldman.FalconCatcherMiddleware(),
+            goldman.DeserializerMiddleware(),
+            goldman.SerializerMiddleware(),
+            goldman.ThreadLocalMiddleware(),
         ]
         middleware += self.MIDDLEWARE
 

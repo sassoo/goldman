@@ -12,7 +12,7 @@ import goldman
 import falcon
 
 from ..resources.base import Resource as BaseResource
-from goldman.utils.url_helpers import url_for_model
+from goldman.utils.url_helpers import rid_url
 
 
 class Resource(BaseResource):
@@ -55,7 +55,7 @@ class Resource(BaseResource):
         model = responder.find(self.rtype, rid)
 
         resp.last_modified = model.updated
-        resp.location = url_for_model(model.rtype, model.rid)
+        resp.location = rid_url(self.rtype, rid)
 
         resp.serialize(responder.to_rest(model))
 
@@ -70,6 +70,6 @@ class Resource(BaseResource):
         goldman.sess.store.update(model)
 
         resp.last_modified = model.updated
-        resp.location = url_for_model(model.rtype, model.rid)
+        resp.location = rid_url(self.rtype, rid)
 
         resp.serialize(responder.to_rest(model))

@@ -14,7 +14,7 @@
 import goldman
 
 
-def url_for_rtype(rtype):
+def rtype_url(rtype):
     """ Return a string relative URL for a resource endpoint
 
     This represents the API endpoint for performing any
@@ -29,8 +29,8 @@ def url_for_rtype(rtype):
     return '{}/{}'.format(goldman.config.BASE_URL, rtype)
 
 
-def url_for_model(rtype, rid):
-    """ Return a string relative URL for a model
+def rid_url(rtype, rid):
+    """ Return a string relative URL for a unique resource id
 
     :param rtype:
         string resource type name of the model
@@ -40,4 +40,4 @@ def url_for_model(rtype, rid):
         relative string URL
     """
 
-    return '{}/{}'.format(url_for_rtype(rtype), rid)
+    return '{}/{}'.format(rtype_url(rtype), rid)

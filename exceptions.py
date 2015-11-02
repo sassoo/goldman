@@ -243,6 +243,21 @@ class InvalidUsername(APIException):
 """
 
 
+class AccessDenied(APIException):
+    """ The logged in user lacks privileges to get the resource. """
+
+    DETAIL = 'The access attempt on the requested resource ' \
+             'was denied.'
+
+    def __init__(self, **kwargs):
+        super(AccessDenied, self).__init__(**{
+            'code': 'access_denied',
+            'detail': kwargs.get('detail', self.DETAIL),
+            'status': falcon.HTTP_403,
+            'title': 'Access denied accessing resource',
+        })
+
+
 class ModificationDenied(APIException):
     """ The logged in user lacks privileges for attempted modification. """
 
@@ -255,21 +270,6 @@ class ModificationDenied(APIException):
             'detail': kwargs.get('detail', self.DETAIL),
             'status': falcon.HTTP_403,
             'title': 'Access denied in modification attempt',
-        })
-
-
-class ReadDenied(APIException):
-    """ The logged in user lacks privileges to get the resource. """
-
-    DETAIL = 'The modification attempt on the requested resource ' \
-             'was denied.'
-
-    def __init__(self, **kwargs):
-        super(ReadDenied, self).__init__(**{
-            'code': 'read_denied',
-            'detail': kwargs.get('detail', self.DETAIL),
-            'status': falcon.HTTP_403,
-            'title': 'Access denied in accessing resource',
         })
 
 

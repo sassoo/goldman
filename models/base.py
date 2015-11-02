@@ -50,6 +50,12 @@ class Model(_SchematicsModel):
         return cls.get_fields_by_prop('index', True)
 
     @classproperty
+    def rid_field(cls):  # NOQA
+        """ Return the resource id field str name """
+
+        return cls.get_fields_by_prop('resource_id', True)[0]
+
+    @classproperty
     def relationships(cls):  # NOQA
         """ Return a list of all the fields that are relationships """
 
@@ -71,7 +77,7 @@ class Model(_SchematicsModel):
     def to_manys(cls):  # NOQA
         """ Return a list of all the ToMany field types """
 
-        return cls.get_fields_by_class(ToOneType)
+        raise NotImplementedError
 
     @classproperty
     def to_ones(cls):  # NOQA
@@ -169,3 +175,26 @@ class Model(_SchematicsModel):
                 dirty_fields.append(key)
 
         return dirty_fields
+
+    @property
+    def rid_val(self):
+        """ Return the resource id field value """
+
+        return getattr(self, self.rid_field)
+
+    def to_primitive(self, sparse_fields=None, *args, **kwargs):
+        """ Override the schematics native to_primitive
+
+        This supports sparse_fields where a list of field names
+        can be provided which limits the serialization to ONLY
+        those field names. A whitelist effectively.
+        """
+
+        props = super(Model, self).to_primitive(*args, **kwargs)
+
+        if sparse_fields:
+            for prop in props.keys():
+                if prop not in sparse_fields:
+                    del props[prop]
+
+        return props

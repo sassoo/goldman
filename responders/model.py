@@ -98,14 +98,15 @@ class Responder(object):
         """
 
         model = resource.model
+        self._model = model
+        self._req = req
 
         # declare these here instead of in each query
         # param since they are a bit expensive.
         fields = model.all_fields
         rels = model.relationships
-        rtype = model.RTYPE
 
-        self.fields = qp_fields.from_req(req, rtype, fields)
+        self.fields = qp_fields.from_req(req)
         self.filters = qp_filter.from_req(req, fields)
         self.includes = qp_include.from_req(req, rels)
         self.pages = qp_page.from_req(req)
@@ -114,7 +115,8 @@ class Responder(object):
     def find(self, rtype, rid):
         """ Find a model from the store by resource id """
 
-        model = goldman.sess.store.find(rtype, 'rid', rid)
+        rid_field = self._model.rid_field
+        model = goldman.sess.store.find(rtype, rid_field, rid)
 
         if not model:
             abort(exceptions.DocumentNotFound)
@@ -144,8 +146,6 @@ class Responder(object):
         for key, val in props.items():
             setattr(model, key, val)
 
-        print goldman.sess.login
-        print model.to_primitive()
         try:
             model.validate()
         except ModelValidationError as errors:
@@ -159,12 +159,25 @@ class Responder(object):
 
         Additionally, perform the following tasks:
 
-            * purge all fields not allowed as outgoing data
+            * process teh sparse fields if provided
+            * purge all fields never allowed as outgoing data
+            * rename the resource id field to a key named `rid`
+            * move the to_one relationships to a to_ones key
 
         :return: dict
         """
 
-        props = model.to_primitive()
+        fields = []
+
+        if self._req.is_getting and self.fields:
+            fields = [fields for f in self.fields if f.rtype == model.rtype]
+            fields += ['rid', 'rtype']
+
+        props = model.to_primitive(sparse_fields=fields)
         props = to_rest_hide(model, props)
+
+        props['rid'] = props.pop(model.rid_field)
+        # props['to_manys'] = {key: props.pop(key) for key in model.to_manys}
+        props['to_ones'] = {key: props.pop(key) for key in model.to_ones}
 
         return props

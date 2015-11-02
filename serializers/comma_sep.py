@@ -26,3 +26,7 @@ class Serializer(BaseSerializer):
         """
 
         pass
+        # X-Total-Count header
+        # Link header for pagination
+        #   http://tools.ietf.org/html/rfc5988#section-5
+        #   https://canvas.instructure.com/doc/api/file.pagination.html

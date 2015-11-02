@@ -1,6 +1,6 @@
 """
-    resources.file_upload
-    ~~~~~~~~~~~~~~~~~~~~~
+    resources.s3_upload
+    ~~~~~~~~~~~~~~~~~~~
 
 """
 

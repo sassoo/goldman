@@ -8,47 +8,37 @@
     relationship.
 """
 
-import goldman
-
-from schematics.exceptions import ValidationError
-from schematics.types import StringType
+from schematics.types import BaseType
 
 
-class ToOneProxy(object):
-    """ Lazy loading proxy object for to-one relationships """
+class ToOne(object):
+    """ ToOne object """
 
-    def __init__(self, rtype, rid):
+    def __init__(self, rtype, rid=None):
 
-        self._model = None
-        self._resolved = False
-        self.rid = rid
         self.rtype = rtype
+        self.rid = rid
 
-        self._initialized = True
+    def __eq__(self, other):
 
-    # def _load(self):
-    #     """ Load the model from the database """
+        try:
+            return self.rtype == other.rtype and self.rid == other.rid
+        except AttributeError:
+            return False
 
-    #     if self.rid:
-    #         store = goldman.sess.store
-    #         model = store.find(self.rtype, 'rid', self.rid)
+    def __repr__(self):
 
-    #         self._model, self._resolved = model, True
+        name = self.__class__.__name__
 
-    def __getattr__(self, name):
+        return '{}(\'{}\', rid=\'{}\')'.format(name, self.rtype, self.rid)
 
-        if not hasattr(self, name) and not self._resolved:
-            self._load()
+    def __str__(self):
 
-        return getattr(self._model, name)
+        return self.rid
 
 
-class ToOneType(StringType):
+class ToOneType(BaseType):
     """ Custom field for our ToOne relationships """
-
-    MESSAGES = {
-        'exists': 'resource can not be found'
-    }
 
     def __init__(self, rtype, **kwargs):
 
@@ -56,17 +46,24 @@ class ToOneType(StringType):
 
         super(ToOneType, self).__init__(**kwargs)
 
-    def validate_exists(self, value):
-        """ Schematics validator
+    def to_native(self, value, context=None):
+        """ Schematics deserializer override
 
-        The resource id provided must exist in the database
+        :return: ToOne instance
         """
 
-        if value:
-            store = goldman.sess.store
-            model = store.find(self.rtype, 'rid', value)
+        if isinstance(value, ToOne):
+            return value
 
-            if not model:
-                raise ValidationError(self.messages['exists'])
+        return ToOne(self.rtype, value)
 
-        return value
+    def to_primitive(self, value, context=None):
+        """ Schematics serializer override
+
+        :return: dict
+        """
+
+        if context and context.get('rel_ids'):
+            return value.rid
+
+        return {'rtype': self.rtype, 'rid': value.rid}

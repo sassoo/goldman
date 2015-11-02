@@ -185,6 +185,8 @@ def from_req(req, fields):  # pylint: disable=too-many-branches
     vals = []
 
     for key, val in req.params.items():
+        detail = None
+
         try:
             field, oper = _parse_param(key)
         except (TypeError, ValueError):
@@ -195,7 +197,7 @@ def from_req(req, fields):  # pylint: disable=too-many-branches
                      'currently supported. Please remove {} from ' \
                      'your request & retry'.format(key)
 
-        elif field in fields:
+        elif field not in fields:
             detail = 'Invalid filter query of {}, {} field not ' \
                      'found'.format(key, val)
 

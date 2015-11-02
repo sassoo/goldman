@@ -32,6 +32,7 @@ FILTER_TABLE = {
 
 
 VALIDATION_ERRORS_TABLE = {
+    '23503': '{} does not exists',
     '23505': '{} must be unique',
 }
 
@@ -63,14 +64,13 @@ def handle_exc(exc):
     :param exc: psycopg2 exception
     """
 
-    if exc.pgcode:
-        err = VALIDATION_ERRORS_TABLE.get(exc.pgcode)
+    err = VALIDATION_ERRORS_TABLE.get(exc.pgcode)
 
-        if err:
-            col = col_from_exc(exc)
-            err = err.format(col)
+    if err:
+        col = col_from_exc(exc)
+        err = err.format(col)
 
-            abort(exceptions.ValidationFailure(col, detail=err))
+        abort(exceptions.ValidationFailure(col, detail=err))
 
     abort(exceptions.DatabaseUnavailable)
 
@@ -170,14 +170,12 @@ class Store(BaseStore):
         stmts = []
 
         for filtr in filters:
-            key, oper, val = filtr
+            prop = '{0}_{1}'.format(filtr.field, filtr.oper)
+            oper = FILTER_TABLE[filtr.oper]
 
-            prop = '{0}_{1}'.format(key, oper)
-            oper = FILTER_TABLE[oper]
+            stmt = '{0} {1} %({2})s'.format(filtr.field, oper, prop)
 
-            stmt = '{0} {1} %({2})s'.format(key, oper, prop)
-
-            param.update({prop: val})
+            param.update({prop: filtr.val})
             stmts.append(stmt)
 
         if stmts:
@@ -216,7 +214,10 @@ class Store(BaseStore):
     def to_pg(model):
         """ Invoke the models to_primitive properly for pg """
 
-        return model.to_primitive(context={'datetime_date': True})
+        return model.to_primitive(context={
+            'datetime_date': True,
+            'rel_ids': True,
+        })
 
     def create(self, model):
         """ Given a model object instance create it """
@@ -240,12 +241,12 @@ class Store(BaseStore):
             table=model.rtype,
         )
 
-        result = self.query(query, one=True, param=param)
+        result = self.query(query, param=param)
 
         signals.post_create.send(model.__class__, model=model)
         signals.post_save.send(model.__class__, model=model)
 
-        return result
+        return result[0]
 
     def delete(self, model):
         """ Given a model object instance delete it """
@@ -253,19 +254,20 @@ class Store(BaseStore):
         signals.pre_delete.send(model.__class__, model=model)
         signals.acl_delete.send(model.__class__, model=model)
 
-        param = self.to_pg(model)
+        param = {'rid_val': self.to_pg(model)[model.rid_field]}
         query = """
                 DELETE FROM {table}
-                WHERE rid = %(rid)s
+                WHERE {rid_field} = %(rid_val)s
                 RETURNING {cols};
                 """
 
         query = query.format(
             cols=self.field_cols(model),
+            rid_field=model.rid_field,
             table=model.rtype,
         )
 
-        result = self.query(query, one=True, param=param)
+        result = self.query(query, param=param)
 
         signals.post_delete.send(model.__class__, model=model)
 
@@ -299,14 +301,14 @@ class Store(BaseStore):
         signals.pre_find.send(model.__class__, model=model)
         signals.acl_find.send(model.__class__, model=model)
 
-        value = self.query(query, one=True, param=param)
-        if value:
-            value = model(value)
-            signals.post_find.send(value.__class__, model=value)
+        result = self.query(query, param=param)
+        if result:
+            result = model(result[0])
+            signals.post_find.send(result.__class__, model=result)
 
-        return value
+        return result
 
-    def query(self, query, one=False, param=None):
+    def query(self, query, param=None):
         """ Perform a SQL based query
 
         This will abort on a failure to communicate with
@@ -314,36 +316,36 @@ class Store(BaseStore):
 
         :query: string query
         :params: parameters for the query
-        :return: Record or RecordList from psycopg2
+        :return: RecordList from psycopg2
         """
 
         with self.conn.cursor() as curs:
             try:
                 curs.execute(query, param)
             except BaseException as exc:
-                msg = 'Error executing {} query with params {} : ' \
-                      '{}. Error code {}'.format(query, param, exc, exc.pgcode)
+                msg = 'query: {}, param: {}, exc: {}'.format(query, param, exc)
+
+                if hasattr(exc, 'pgcode'):
+                    msg = '{}, exc code: {}'.format(msg, exc.pgcode)
 
                 print msg
                 handle_exc(exc)
 
-            if one:
-                value = curs.fetchone()
-            else:
-                value = curs.fetchall()
+            results = curs.fetchall()
 
-        return value
+        return results
 
-    def search(self, model, **kwargs):
+    def search(self, rtype, **kwargs):
         """ Search for the model by assorted criteria """
 
+        model = rtype_to_model(rtype)
         param = {}
         pages = self.pages_query(kwargs.get('pages'))
         sorts = self.sorts_query(kwargs.get('sorts'))
 
         query = 'SELECT {cols} FROM {table}'.format(
             cols=self.field_cols(model),
-            table=model.rtype,
+            table=rtype,
         )
 
         filters = kwargs.get('filters')
@@ -354,10 +356,10 @@ class Store(BaseStore):
         query += sorts
         query += pages
 
-        values = self.query(query, param=param)
-        values = [model(value) for value in values]
+        results = self.query(query, param=param)
+        results = [model(result) for result in results]
 
-        return values
+        return results
 
     def update(self, model):
         """ Given a model object instance update it """
@@ -368,10 +370,12 @@ class Store(BaseStore):
         signals.acl_save.send(model.__class__, model=model)
 
         param = self.to_pg(model)
+        param['rid_val'] = param[model.rid_field]
+
         query = """
                 UPDATE {table}
                 SET ({dirty_cols}) = ({dirty_vals})
-                WHERE rid = %(rid)s
+                WHERE {rid_field} = %(rid_val)s
                 RETURNING {cols};
                 """
 
@@ -379,12 +383,13 @@ class Store(BaseStore):
             cols=self.field_cols(model),
             dirty_cols=self.dirty_cols(model),
             dirty_vals=self.dirty_vals(model),
+            rid_field=model.rid_field,
             table=model.rtype,
         )
 
-        result = self.query(query, one=True, param=param)
+        result = self.query(query, param=param)
 
         signals.post_update.send(model.__class__, model=model)
         signals.post_save.send(model.__class__, model=model)
 
-        return result
+        return result[0]

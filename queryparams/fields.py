@@ -11,10 +11,7 @@
         jsonapi.org/examples/#sparse-fieldsets
 """
 
-import goldman.exceptions as exceptions
 import re
-
-from goldman.utils.error_handlers import abort
 
 
 class SparseField(object):
@@ -91,51 +88,13 @@ def _parse_param(key, val):
         return rtype, fields
 
 
-def _validate_fields(param, param_fields, model_fields):
-    """ Ensure the fields exist on the model """
-
-    for field in param_fields:
-        if field not in model_fields:
-            abort(exceptions.InvalidQueryParams(**{
-                'detail': 'Invalid sparse fields query {}, '
-                          'field {} not found'.format(param, field),
-                'parameter': 'sort',
-            }))
-
-
-def _validate_rtype(param, param_rtype, model_rtype):
-    """ Ensure the params query rtype matches the models """
-
-    if param_rtype != model_rtype:
-        allowed = 'fields[{}]'.format(model_rtype)
-
-        abort(exceptions.InvalidQueryParams(**{
-            'detail': 'Invalid sparse fields query {}, only '
-                      '{} is allowed'.format(param, allowed),
-            'parameter': 'fields',
-        }))
-
-
-def from_req(req, rtype, fields):
+def from_req(req):
     """ Determine the sparse fields to limit the response to
 
     Return an array of SparseField objects.
 
-    If the sparse fields don't comply with our basic rules
-    then abort immediately on an InvalidQueryParam exception.
-
-    RULES
-    ~~~~~
-
-    Currently our API framework does not support sparse
-    fields on relationships.
-
     :param req:
         Falcon request object
-    :param fields:
-        Array of string model object field names
-    :param rtype:
-        String model object resource type
     :return:
         Array of SparseField objects
     """
@@ -148,9 +107,6 @@ def from_req(req, rtype, fields):
         except (TypeError, ValueError):
             continue
 
-        _validate_rtype(key, param_rtype, rtype)
-        _validate_fields(key, param_fields, fields)
-
-        vals.append(SparseField(rtype, param_fields))
+        vals.append(SparseField(param_rtype, param_fields))
 
     return vals

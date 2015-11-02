@@ -69,7 +69,7 @@ class Store(object):
 
         raise NotImplementedError
 
-    def query(self, query, one=False, param=None):
+    def query(self, query, param=None):
         """ Perform a store based query """
 
         raise NotImplementedError
