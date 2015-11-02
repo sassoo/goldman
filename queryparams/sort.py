@@ -27,11 +27,8 @@ class Sortable(object):
     def __init__(self, field):
         """ Preserve the original field for easy compares & output """
 
-        _field = field.lower()
-        field = _field.lstrip('-')
-
-        self._field = _field
-        self.field = field
+        self._field = field.lower()
+        self.field = self._field.lstrip('-')
 
     @property
     def asc(self):
@@ -75,59 +72,46 @@ class Sortable(object):
         return self.raw_field
 
 
-def _validate_field(param, field, fields):
-    """ Ensure the sortable field exists on the model """
-
-    if field not in fields:
-        abort(exceptions.InvalidQueryParams(**{
-            'detail': 'Invalid sort query, {} field '
-                      'not found'.format(param),
-            'parameter': 'sort',
-        }))
-
-
-def _validate_no_rels(param, field, rels):
-    """ Ensure the sortable field is not on a relationship """
-
-    if field in rels:
-        abort(exceptions.InvalidQueryParams(**{
-            'detail': '{} is not a supported sortable value. '
-                      'Sorting on relationships is not currently '
-                      'supported'.format(param),
-            'parameter': 'sort',
-        }))
-
-
-def from_req(req, fields, rels):
+def from_req(req):
     """ Determine the sorting preference by query parameter
 
     Return an array of Sortable objects.
-
-    If the sortables don't comply with our basic rules then
-    abort immediately on an InvalidQueryParam exception.
-
-    RULES
-    ~~~~~
-
-    Currently our API framework does not support sorting
-    on relationships fields.
-
-    :param req:
-        Falcon request object
-    :param fields:
-        Array of string model object field names
-    :param rels:
-        Array of string model object relationship field names
-    :return:
-        Array of Sortable objects
     """
 
     vals = req.get_param_as_list('sort') or [goldman.config.SORT]
 
-    for val in vals:
-        field = val.lower().lstrip('-')
-
-        _validate_no_rels(val, field, rels)
-        _validate_field(val, field, fields)
-
     return [Sortable(val) for val in vals]
+
+
+def _validate_field(param, fields):
+    """ Ensure the sortable field exists on the model """
+
+    if param.field not in fields:
+        abort(exceptions.InvalidQueryParams(**{
+            'detail': 'Invalid sort query, {} field '
+                      'not found'.format(param.raw_field),
+            'parameter': 'sort',
+        }))
+
+
+def _validate_no_rels(param, rels):
+    """ Ensure the sortable field is not on a relationship """
+
+    if param.field in rels:
+        abort(exceptions.InvalidQueryParams(**{
+            'detail': '{} is not a supported sortable value. '
+                      'Sorting on relationships is not currently '
+                      'supported'.format(param.raw_field),
+            'parameter': 'sort',
+        }))
+
+
+def validate(req, model):
+    """ sort query param model based validations """
+
+    rels = model.relationships
+    fields = model.all_fields
+
+    for param in req.sorts:
+        _validate_no_rels(param, rels)
+        _validate_field(param, fields)

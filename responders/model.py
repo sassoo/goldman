@@ -14,11 +14,6 @@
 
 import goldman
 import goldman.exceptions as exceptions
-import goldman.queryparams.fields as qp_fields
-import goldman.queryparams.filter as qp_filter
-import goldman.queryparams.include as qp_include
-import goldman.queryparams.page as qp_page
-import goldman.queryparams.sort as qp_sort
 
 from goldman.utils.error_handlers import abort
 from schematics.exceptions import ModelValidationError
@@ -38,8 +33,6 @@ def from_rest_hide(model, props):
         except KeyError:
             continue
 
-    return props
-
 
 def from_rest_ignore(model, props):
     """ Purge fields that are completely unknown """
@@ -50,8 +43,6 @@ def from_rest_ignore(model, props):
         if prop not in model_fields:
             del props[prop]
 
-    return props
-
 
 def from_rest_lower(model, props):
     """ Lowercase fields requesting it during a REST deserialization """
@@ -61,8 +52,6 @@ def from_rest_lower(model, props):
             props[field] = props[field].lower()
         except (AttributeError, KeyError):
             continue
-
-    return props
 
 
 def to_rest_hide(model, props):
@@ -79,7 +68,21 @@ def to_rest_hide(model, props):
         except KeyError:
             continue
 
-    return props
+
+def to_rest_rels(model, props):
+    """ Move the relationships to appropriate location in the props
+
+    All to_ones should be in a to_ones key while all to_manys
+    should be in a to_manys key.
+    """
+
+    props['to_ones'] = {}
+
+    for key in model.to_ones:
+        try:
+            props['to_ones'][key] = props.pop(key)
+        except KeyError:
+            continue
 
 
 # pylint: disable=too-many-instance-attributes
@@ -97,20 +100,7 @@ class Responder(object):
             model class (not instance)
         """
 
-        model = resource.model
-        self._model = model
-        self._req = req
-
-        # declare these here instead of in each query
-        # param since they are a bit expensive.
-        fields = model.all_fields
-        rels = model.relationships
-
-        self.fields = qp_fields.from_req(req)
-        self.filters = qp_filter.from_req(req, fields)
-        self.includes = qp_include.from_req(req, rels)
-        self.pages = qp_page.from_req(req)
-        self.sorts = qp_sort.from_req(req, fields, rels)
+        self._model = resource.model
 
     def find(self, rtype, rid):
         """ Find a model from the store by resource id """
@@ -137,9 +127,9 @@ class Responder(object):
                 * coerce all the values
         """
 
-        props = from_rest_hide(model, props)
-        props = from_rest_ignore(model, props)
-        props = from_rest_lower(model, props)
+        from_rest_hide(model, props)
+        from_rest_ignore(model, props)
+        from_rest_lower(model, props)
 
         # schematics will not auto cast these so after
         # validating we then have to cast them
@@ -159,7 +149,7 @@ class Responder(object):
 
         Additionally, perform the following tasks:
 
-            * process teh sparse fields if provided
+            * process the sparse fields if provided
             * purge all fields never allowed as outgoing data
             * rename the resource id field to a key named `rid`
             * move the to_one relationships to a to_ones key
@@ -167,17 +157,16 @@ class Responder(object):
         :return: dict
         """
 
-        fields = []
+        sparse = goldman.sess.req.fields.get(model.rtype, [])
 
-        if self._req.is_getting and self.fields:
-            fields = [fields for f in self.fields if f.rtype == model.rtype]
-            fields += ['rid', 'rtype']
+        if sparse:
+            sparse += [model.rid_field, model.rtype_field]
 
-        props = model.to_primitive(sparse_fields=fields)
-        props = to_rest_hide(model, props)
-
+        props = model.to_primitive(sparse_fields=sparse)
         props['rid'] = props.pop(model.rid_field)
-        # props['to_manys'] = {key: props.pop(key) for key in model.to_manys}
-        props['to_ones'] = {key: props.pop(key) for key in model.to_ones}
+        props['rtype'] = props.pop(model.rtype_field)
+
+        to_rest_hide(model, props)
+        to_rest_rels(model, props)
 
         return props

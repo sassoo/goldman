@@ -71,51 +71,53 @@ class Serializer(BaseSerializer):
 
         rid = data.pop('rid')
         rtype = data.pop('rtype')
-
         rlink = rid_url(rtype, rid)
+        rels = {}
 
-        # for to_one in data['to_ones'].items():
-        #     self._serialize_to_one(to_one)
+        for key, val in data['to_ones'].items():
+            rels.update(self._serialize_to_one(key, val, rlink))
 
-        # relationships = {}
-        # to_ones = model.to_ones
+        del data['to_ones']
 
-        # for key in attrs .keys():
-        # per the JSON API relationship fields should
-        # NOT be present in the attributes object
-        #     if key in to_ones:
-        #         del attrs[key]
-
-        # for key, val in to_ones.items():
-        #     if key in model.hidden or not val:
-        #         del to_ones[key]
-        #     else:
-        #         relationships[key] = serialize_to_one(val)
-
-        return {
+        val = {
             'id': rid,
             'type': rtype,
-            'attributes': data,
             'links': {
                 'self': rlink,
             },
-            # 'relationships': relationships
         }
 
-    def _serialize_to_one(self, to_one):
+        if data:
+            val['attributes'] = data
+        if rels:
+            val['relationships'] = rels
+
+        return val
+
+    def _serialize_to_one(self, key, val, rlink):
         """ Make a to_one JSON API compliant
 
-        :spec: jsonapi.org/format/#document-resource-object-relationships
-        :param to_one: single to_one as documented above
-        :return: dict
+        :spec:
+            jsonapi.org/format/#document-resource-object-relationships
+        :param key:
+        :param val:
+        :return:
+            dict as documented in the spec link
         """
 
+        data = None
+
+        if val and val['rid']:
+            data = {
+                'id': val['rid'],
+                'type': val['rtype'],
+            }
+
         return {
-            'data': {
-                'id': to_one['id'],
-                'type': to_one['type']
-            },
-            'links': {
-                'related': to_one['href']
+            key: {
+                'data': data,
+                'links': {
+                    'related': rlink + '/' + key
+                }
             }
         }

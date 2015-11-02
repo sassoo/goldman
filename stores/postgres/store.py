@@ -31,50 +31,6 @@ FILTER_TABLE = {
 }
 
 
-VALIDATION_ERRORS_TABLE = {
-    '23503': '{} does not exists',
-    '23505': '{} must be unique',
-}
-
-
-def col_from_exc(exc):
-    """ Derive the column name from the database exception
-
-    The postgres diagnostics interface will return a
-    `constraint_name` which consists of a str formatted:
-
-        <table_name>_<column_name>_key
-
-    The middle string `column_name` is what this function
-    returns.
-
-    :param exc: psycopg2 exception
-    :return: str
-    """
-
-    return exc.diag.constraint_name.split('_')[1]
-
-
-def handle_exc(exc):
-    """ Given a database exception determine how to fail
-
-    Attempt to lookup a known error & abort on a meaningful
-    error. Otherwise issue a generic DatabaseUnavailable exception.
-
-    :param exc: psycopg2 exception
-    """
-
-    err = VALIDATION_ERRORS_TABLE.get(exc.pgcode)
-
-    if err:
-        col = col_from_exc(exc)
-        err = err.format(col)
-
-        abort(exceptions.ValidationFailure(col, detail=err))
-
-    abort(exceptions.DatabaseUnavailable)
-
-
 class Store(BaseStore):
     """ PostgreSQL database store """
 
@@ -329,7 +285,7 @@ class Store(BaseStore):
                     msg = '{}, exc code: {}'.format(msg, exc.pgcode)
 
                 print msg
-                handle_exc(exc)
+                abort(exceptions.DatabaseUnavailable)
 
             results = curs.fetchall()
 

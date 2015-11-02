@@ -20,6 +20,7 @@ class Middleware(object):
 
         # goldman.sess.cache = redis, memcached, whatever
         # goldman.sess.idmap = goldman.config.STORE()
+        goldman.sess.req = req
 
         if goldman.config.STORE:
             goldman.sess.store = goldman.config.STORE()

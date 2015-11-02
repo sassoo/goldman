@@ -36,6 +36,7 @@ class API(falcon.API):
             goldman.FalconCatcherMiddleware(),
             goldman.DeserializerMiddleware(),
             goldman.SerializerMiddleware(),
+            goldman.ModelQpsMiddleware(),
             goldman.ThreadLocalMiddleware(),
         ]
         middleware += self.MIDDLEWARE

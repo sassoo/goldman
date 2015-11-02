@@ -11,52 +11,11 @@
         jsonapi.org/examples/#sparse-fieldsets
 """
 
+import goldman.exceptions as exceptions
 import re
 
-
-class SparseField(object):
-    """ Sparse fields object
-
-    An instance of this object can be used to express a
-    sparse fields preference where a particular models
-    fields are limited to those requested.
-
-    It's a nice way of limiting the response payload &
-    database queries to only the fields required.
-
-    It's done by requesting the sparse fields of a particular
-    model type.
-
-    :param rtype:
-        String resource type name for pruning fields. Required.
-    :param fields:
-        Iterable of whitelisted string field names
-    """
-
-    def __init__(self, rtype, fields):
-
-        fields = [field.lower() for field in fields]
-
-        self.rtype = rtype
-        self.fields = tuple(sorted(fields))
-
-    def __eq__(self, other):
-
-        try:
-            return self.rtype == other.rtype and \
-                self.fields == other.fields
-        except AttributeError:
-            return False
-
-    def __repr__(self):
-
-        name = self.__class__.__name__
-
-        return '{}(\'{}\', {})'.format(name, self.rtype, self.fields)
-
-    def __str__(self):
-
-        return '{}, {}'.format(self.rtype, self.fields)
+from goldman.utils.error_handlers import abort
+from goldman.utils.model_helpers import rtype_to_model
 
 
 def _parse_param(key, val):
@@ -91,15 +50,17 @@ def _parse_param(key, val):
 def from_req(req):
     """ Determine the sparse fields to limit the response to
 
-    Return an array of SparseField objects.
+    Return a dict where the key is the resource type (rtype) &
+    the value is an array of string fields names to whitelist
+    against.
 
     :param req:
         Falcon request object
     :return:
-        Array of SparseField objects
+        dict
     """
 
-    vals = []
+    vals = {}
 
     for key, val in req.params.items():
         try:
@@ -107,6 +68,55 @@ def from_req(req):
         except (TypeError, ValueError):
             continue
 
-        vals.append(SparseField(param_rtype, param_fields))
+        vals[param_rtype] = sorted([field.lower() for field in param_fields])
 
     return vals
+
+
+def _validate_param(rtype, fields):
+    """ Ensure the sparse fields exists on the models """
+
+    try:
+        model = rtype_to_model(rtype)
+        model_fields = model.all_fields
+    except AttributeError:
+        abort(exceptions.InvalidQueryParams(**{
+            'detail': 'Unknown sparse field type of {}'.format(rtype),
+            'parameter': 'fields',
+        }))
+
+    for field in fields:
+        if field not in model_fields:
+            abort(exceptions.InvalidQueryParams(**{
+                'detail': 'The sparse field type of {} does not have '
+                          'a field name of {}'.format(rtype, field),
+                'parameter': 'fields',
+            }))
+
+
+def _validate_req(req):
+    """ Ensure the request is a GET request
+
+    Modification type requests could have other fields modified
+    by the backend persistance layer through stored procedures or
+    triggers & would need to be reported back to the client.
+
+    In this scenario, it's best to only support sparse fields on
+    requests that don't have side-effects.
+    """
+
+    if not req.is_getting:
+        abort(exceptions.InvalidQueryParams(**{
+            'detail': 'Sparse fields is only supported on GET '
+                      'requests',
+            'parameter': 'fields',
+        }))
+
+
+def validate(req, model):  # pylint: disable=unused-argument
+    """ fields query param model based validations """
+
+    _validate_req(req)
+
+    for rtype, fields in req.fields.items():
+        _validate_param(rtype, fields)

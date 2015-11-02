@@ -13,6 +13,8 @@
 
 import goldman.exceptions as exceptions
 
+from goldman.types.resource import ResourceType
+from goldman.types.rid import RidType
 from goldman.types.to_one import ToOneType
 from goldman.utils.decorators import classproperty
 from schematics.exceptions import ConversionError
@@ -50,16 +52,22 @@ class Model(_SchematicsModel):
         return cls.get_fields_by_prop('index', True)
 
     @classproperty
-    def rid_field(cls):  # NOQA
-        """ Return the resource id field str name """
-
-        return cls.get_fields_by_prop('resource_id', True)[0]
-
-    @classproperty
     def relationships(cls):  # NOQA
         """ Return a list of all the fields that are relationships """
 
         return cls.to_manys + cls.to_ones
+
+    @classproperty
+    def rid_field(cls):  # NOQA
+        """ Return the resource id field str name """
+
+        return cls.get_fields_by_class(RidType)[0]
+
+    @classproperty
+    def rtype_field(cls):  # NOQA
+        """ Return the resource type field str name """
+
+        return cls.get_fields_by_class(ResourceType)[0]
 
     @classproperty
     def to_lowers(cls):  # NOQA
@@ -77,7 +85,8 @@ class Model(_SchematicsModel):
     def to_manys(cls):  # NOQA
         """ Return a list of all the ToMany field types """
 
-        raise NotImplementedError
+        return []
+        # raise NotImplementedError
 
     @classproperty
     def to_ones(cls):  # NOQA

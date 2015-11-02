@@ -4,10 +4,17 @@
 
     Filter resources according to one or more criteria.
 
-    Requested filters follow the django convention of using
-    double underscores '__' to apply operators. The query
-    parameter itself follows the JSON API convention for
-    filtering:
+    Like django & other frameworks the key & the operator are
+    separated by a double underscore. Example filters:
+
+        filter[name]=John
+        filter[price__gt]=199
+        filter[boss__exists]=true
+        filter[loc__geo_near]=40,90,1
+
+
+    The query parameter itself follows the JSON API convention
+    for filtering:
 
         jsonapi.org/format/#fetching-filtering
         jsonapi.org/recommendations/#filtering
@@ -71,11 +78,10 @@ class Filter(object):
 
     def __str__(self):
 
-        return '({}, {}, {}, neg={})'.format(
+        return 'filter[{}__{}]={}'.format(
             self.field,
             self.oper,
             self.val,
-            self.neg,
         )
 
 
@@ -161,96 +167,85 @@ def _parse_param(key):
         return field, oper
 
 
-def from_req(req, fields):  # pylint: disable=too-many-branches
-    """ Determine the filters to apply by query parameter
-
-    Return an array of Filter objects.
-
-    Like django & other frameworks the key & the operator are
-    separated by a double underscore. Example filters:
-
-        filter[name]=John
-        filter[price__gt]=199
-        filter[boss__exists]=true
-        filter[loc__geo_near]=40,90,1
-
-    :param req:
-        Falcon request object
-    :param fields:
-        Array of string model object field names
-    :return:
-        Array of Filter objects
-    """
+def from_req(req):
+    """ Return an array of Filter objects. """
 
     vals = []
 
     for key, val in req.params.items():
-        detail = None
-
         try:
             field, oper = _parse_param(key)
         except (TypeError, ValueError):
             continue
 
-        if field.count('.') > 1:
+        vals.append(Filter(field, oper, val))
+
+    return vals
+
+
+def validate(req, model):  # pylint: disable=too-many-branches
+    """ filter query param model based validations """
+
+    fields = model.all_fields
+
+    for param in req.filters:
+        detail = None
+
+        if param.field.count('.') > 1:
             detail = 'Filtering on nested relationships is not ' \
                      'currently supported. Please remove {} from ' \
-                     'your request & retry'.format(key)
+                     'your request & retry'.format(param)
 
-        elif field not in fields:
+        elif param.field not in fields:
             detail = 'Invalid filter query of {}, {} field not ' \
-                     'found'.format(key, val)
+                     'found'.format(param, param.field)
 
-        elif oper not in goldman.config.QUERY_FILTERS:
+        elif param.oper not in goldman.config.QUERY_FILTERS:
             detail = 'The query filter {} is not a supported ' \
                      'operator. Please change {} & retry your ' \
-                     'request'.format(oper, key)
+                     'request'.format(param.oper, param)
 
-        elif oper in goldman.config.BOOL_FILTERS:
+        elif param.oper in goldman.config.BOOL_FILTERS:
             try:
-                val = str_to_bool(val)
+                param.val = str_to_bool(param.val)
             except ValueError:
                 detail = 'The query filter {} requires a boolean ' \
                          'for evaluation. Please modify your ' \
-                         'request & retry'.format(key)
+                         'request & retry'.format(param)
 
-        elif oper in goldman.config.DATE_FILTERS:
+        elif param.oper in goldman.config.DATE_FILTERS:
             try:
-                val = str_to_dt(val)
+                param.val = str_to_dt(param.val)
             except ValueError:
                 detail = 'The query filter {} supports only an ' \
                          'epoch or ISO 8601 timestamp. Please ' \
-                         'modify your request & retry'.format(key)
+                         'modify your request & retry'.format(param)
 
-        elif oper in goldman.config.GEO_FILTERS:
+        elif param.oper in goldman.config.GEO_FILTERS:
             try:
-                if not isinstance(val, list) or len(val) <= 2:
+                if not isinstance(param.val, list) or len(param.val) <= 2:
                     raise ValueError
                 else:
-                    val = [float(i) for i in val]
+                    param.val = [float(i) for i in param.val]
             except ValueError:
                 detail = 'The query filter {} requires a list ' \
                          'of floats for geo evaluation. Please ' \
-                         'modify your request & retry'.format(key)
+                         'modify your request & retry'.format(param)
 
-        elif oper in goldman.config.NUM_FILTERS:
+        elif param.oper in goldman.config.NUM_FILTERS:
             try:
-                val = int(val)
+                param.val = int(param.val)
             except TypeError:
                 detail = 'Multiple query filters for {} is ' \
                          'unsupported. Please modify your ' \
-                         'request & retry'.format(key)
+                         'request & retry'.format(param)
             except ValueError:
                 detail = 'The query filter {} requires a number ' \
                          'for evaluation. Please modify your ' \
-                         'request & retry'.format(key)
+                         'request & retry'.format(param)
 
         if detail:
             abort(exceptions.InvalidQueryParams(**{
                 'detail': detail,
                 'parameter': 'filter',
             }))
-
-        vals.append(Filter(field, oper, val))
-
-    return vals

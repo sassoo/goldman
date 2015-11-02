@@ -30,8 +30,13 @@ class Paginator(object):
 
     def __init__(self, limit, offset):
 
-        self.limit = limit
-        self.offset = offset
+        try:
+            self.limit = self._cast_page(limit)
+            self.offset = self._cast_page(offset)
+        except ValueError:
+            self.error = True
+
+        self.total = 0
 
     def __eq__(self, other):
 
@@ -51,38 +56,18 @@ class Paginator(object):
 
         return '{}, {}'.format(self.limit, self.offset)
 
+    @staticmethod
+    def _cast_page(val):
+        """ Convert the page limit & offset into int's & type check """
 
-def _cast_page(val):
-    """ Convert the page limit & offset into int's & type check """
-
-    try:
         if len(val) > 1 or int(val[0]) < 0:
             raise ValueError
-    except ValueError:
-        abort(exceptions.InvalidQueryParams(**{
-            'detail': 'The page[\'limit\'] & page[\'offset\'] query '
-                      'params may only be specified once each & must '
-                      'both be an integer >= 0.',
-            'link': 'jsonapi.org/format/#fetching-pagination',
-            'parameter': 'page',
-        }))
 
-    return int(val[0])
+        return int(val[0])
 
 
 def from_req(req):
     """ Determine the pagination preference by query parameter
-
-    Return a Pagination object based on the query.
-
-    Processing will abort on an exception if the params don't
-    comply with our basic rules.
-
-    RULES
-    ~~~~~
-
-    Numbers only, >=0, & each query param may only be
-    specified once.
 
     :param req:
         Falcon request object
@@ -93,4 +78,24 @@ def from_req(req):
     limit = req.get_param_as_list('page[limit]') or [goldman.config.PAGE_LIMIT]
     offset = req.get_param_as_list('page[offset]') or [0]
 
-    return Paginator(_cast_page(limit), _cast_page(offset))
+    try:
+        return Paginator(limit, offset)
+    except ValueError:
+        return None
+
+
+def validate(req, model):  # pylint: disable=unused-argument
+    """ page query param model based validations
+
+    Numbers only, >=0, & each query param may only be
+    specified once.
+    """
+
+    if not isinstance(req.pages, Paginator):
+        abort(exceptions.InvalidQueryParams(**{
+            'detail': 'The page[\'limit\'] & page[\'offset\'] query '
+                      'params may only be specified once each & must '
+                      'both be an integer >= 0.',
+            'link': 'jsonapi.org/format/#fetching-pagination',
+            'parameter': 'page',
+        }))

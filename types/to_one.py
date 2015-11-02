@@ -8,6 +8,9 @@
     relationship.
 """
 
+import goldman
+
+from schematics.exceptions import ValidationError
 from schematics.types import BaseType
 
 
@@ -40,9 +43,15 @@ class ToOne(object):
 class ToOneType(BaseType):
     """ Custom field for our ToOne relationships """
 
-    def __init__(self, rtype, **kwargs):
+    MESSAGES = {
+        'exists': 'resource can not be found'
+    }
 
-        self.rtype = rtype
+    def __init__(self, foreign_field, foreign_rtype, exists=True, **kwargs):
+
+        self.exists = exists
+        self.foreign_field = foreign_field
+        self.foreign_rtype = foreign_rtype
 
         super(ToOneType, self).__init__(**kwargs)
 
@@ -52,10 +61,11 @@ class ToOneType(BaseType):
         :return: ToOne instance
         """
 
+        print 'XXX nATIVE'
         if isinstance(value, ToOne):
             return value
 
-        return ToOne(self.rtype, value)
+        return ToOne(self.foreign_rtype, value)
 
     def to_primitive(self, value, context=None):
         """ Schematics serializer override
@@ -63,7 +73,23 @@ class ToOneType(BaseType):
         :return: dict
         """
 
+        print 'XXX PRIMITIVE'
         if context and context.get('rel_ids'):
             return value.rid
 
-        return {'rtype': self.rtype, 'rid': value.rid}
+        return {'rtype': value.rtype, 'rid': value.rid}
+
+    def validate_exists(self, value):
+        """ Schematics validator
+
+        The resource must exist in the database
+        """
+
+        if value:
+            store = goldman.sess.store
+            model = store.find(self.foreign_rtype, self.foreign_field, value)
+
+            if not model:
+                raise ValidationError(self.messages['exists'])
+
+        return value
