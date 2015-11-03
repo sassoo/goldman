@@ -36,19 +36,16 @@ def _validate_rels(param, rels):
         }))
 
 
-def from_req(req):
+def init(req, model):
     """ Return an array of fields to include. """
-
-    vals = req.get_param_as_list('include') or []
-
-    return [val.lower() for val in vals]
-
-
-def validate(req, model):
-    """ include query param model based validations """
 
     rels = model.relationships
 
-    for param in req.includes:
+    params = req.get_param_as_list('include') or []
+    params = [param.lower() for param in params]
+
+    for param in params:
         _validate_no_nesting(param)
         _validate_rels(param, rels)
+
+    return params

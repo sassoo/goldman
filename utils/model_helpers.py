@@ -8,6 +8,9 @@
 import goldman
 
 
+__all__ = ['rtype_to_model']
+
+
 def rtype_to_model(rtype):
     """ Return a boolean if the string value represents one
 

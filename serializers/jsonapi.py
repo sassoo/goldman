@@ -69,38 +69,70 @@ class Serializer(BaseSerializer):
         :return: dict
         """
 
-        rid = data.pop('rid')
-        rtype = data.pop('rtype')
-        rlink = rid_url(rtype, rid)
         rels = {}
+        rlink = rid_url(data['rtype'], data['rid'])
 
-        for key, val in data['to_ones'].items():
-            rels.update(self._serialize_to_one(key, val, rlink))
-
-        del data['to_ones']
-
-        val = {
-            'id': rid,
-            'type': rtype,
+        doc = {
+            'id': data.pop('rid'),
+            'type': data.pop('rtype'),
             'links': {
                 'self': rlink,
             },
         }
 
+        for key, val in data['to_manys'].items():
+            rels.update(self._serialize_to_many(key, rlink))
+
+        for key, val in data['to_ones'].items():
+            rels.update(self._serialize_to_one(key, val, rlink))
+
+        del data['to_manys']
+        del data['to_ones']
+
         if data:
-            val['attributes'] = data
+            doc['attributes'] = data
         if rels:
-            val['relationships'] = rels
+            doc['relationships'] = rels
 
-        return val
+        return doc
 
+    def _serialize_to_many(self, key, val, rlink):
+        """ Make a to_many JSON API compliant
+
+        :spec:
+            jsonapi.org/format/#document-resource-object-relationships
+        :param key:
+            the string name of the relationship field
+        :param val:
+            array of dict's containing `rid` & `rtype` keys for the
+            to_many. None if the to_many has no values.
+        :return:
+            dict as documented in the spec link
+        """
+
+        data = []
+
+        if val and val['rid']:
+            data = {'id': val['rid'], 'type': val['rtype']}
+
+        return {
+            key: {
+                'data': data,
+                'links': {
+                    'related': rlink + '/' + key
+                }
+            }
+        }
     def _serialize_to_one(self, key, val, rlink):
         """ Make a to_one JSON API compliant
 
         :spec:
             jsonapi.org/format/#document-resource-object-relationships
         :param key:
+            the string name of the relationship field
         :param val:
+            dict containing `rid` & `rtype` keys for the to_one.
+            None if the to_one has no value.
         :return:
             dict as documented in the spec link
         """
@@ -108,10 +140,7 @@ class Serializer(BaseSerializer):
         data = None
 
         if val and val['rid']:
-            data = {
-                'id': val['rid'],
-                'type': val['rtype'],
-            }
+            data = {'id': val['rid'], 'type': val['rtype']}
 
         return {
             key: {

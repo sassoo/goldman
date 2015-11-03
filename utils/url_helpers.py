@@ -14,6 +14,9 @@
 import goldman
 
 
+__all__ = ['rid_url', 'rtype_url']
+
+
 def rtype_url(rtype):
     """ Return a string relative URL for a resource endpoint
 

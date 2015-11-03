@@ -40,10 +40,10 @@ class Resource(BaseResource):
         responder = goldman.ModelResponder(self, req, resp)
 
         models = goldman.sess.store.search(self.rtype, **{
-            'filters': responder.filters,
-            'includes': responder.includes,
-            'pages': responder.pages,
-            'sorts': responder.sorts,
+            'filters': req.filters,
+            'includes': req.includes,
+            'pages': req.pages,
+            'sorts': req.sorts,
         })
 
         models = [responder.to_rest(model) for model in models]

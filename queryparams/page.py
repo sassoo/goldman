@@ -66,13 +66,13 @@ class Paginator(object):
         return int(val[0])
 
 
-def from_req(req):
+def init(req, model):  # pylint: disable=unused-argument
     """ Determine the pagination preference by query parameter
 
-    :param req:
-        Falcon request object
-    :return:
-        Paginator object
+    Numbers only, >=0, & each query param may only be
+    specified once.
+
+    :return: Paginator object
     """
 
     limit = req.get_param_as_list('page[limit]') or [goldman.config.PAGE_LIMIT]
@@ -81,17 +81,6 @@ def from_req(req):
     try:
         return Paginator(limit, offset)
     except ValueError:
-        return None
-
-
-def validate(req, model):  # pylint: disable=unused-argument
-    """ page query param model based validations
-
-    Numbers only, >=0, & each query param may only be
-    specified once.
-    """
-
-    if not isinstance(req.pages, Paginator):
         abort(exceptions.InvalidQueryParams(**{
             'detail': 'The page[\'limit\'] & page[\'offset\'] query '
                       'params may only be specified once each & must '

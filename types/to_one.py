@@ -40,20 +40,19 @@ class ToOne(object):
         return self.rid
 
 
-class ToOneType(BaseType):
+class Type(BaseType):
     """ Custom field for our ToOne relationships """
 
     MESSAGES = {
         'exists': 'resource can not be found'
     }
 
-    def __init__(self, foreign_field, foreign_rtype, exists=True, **kwargs):
+    def __init__(self, foreign_field, foreign_rtype, **kwargs):
 
-        self.exists = exists
         self.foreign_field = foreign_field
         self.foreign_rtype = foreign_rtype
 
-        super(ToOneType, self).__init__(**kwargs)
+        super(Type, self).__init__(**kwargs)
 
     def to_native(self, value, context=None):
         """ Schematics deserializer override
@@ -61,7 +60,6 @@ class ToOneType(BaseType):
         :return: ToOne instance
         """
 
-        print 'XXX nATIVE'
         if isinstance(value, ToOne):
             return value
 
@@ -73,7 +71,6 @@ class ToOneType(BaseType):
         :return: dict
         """
 
-        print 'XXX PRIMITIVE'
         if context and context.get('rel_ids'):
             return value.rid
 
@@ -87,7 +84,8 @@ class ToOneType(BaseType):
 
         if value:
             store = goldman.sess.store
-            model = store.find(self.foreign_rtype, self.foreign_field, value)
+            model = store.find(self.foreign_rtype, self.foreign_field,
+                               value.rid)
 
             if not model:
                 raise ValidationError(self.messages['exists'])

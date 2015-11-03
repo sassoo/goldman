@@ -13,9 +13,7 @@
 
 import goldman.exceptions as exceptions
 
-from goldman.types.resource import ResourceType
-from goldman.types.rid import RidType
-from goldman.types.to_one import ToOneType
+from goldman.types import ResourceType, RidType, ToManyType, ToOneType
 from goldman.utils.decorators import classproperty
 from schematics.exceptions import ConversionError
 from schematics.models import Model as _SchematicsModel
@@ -85,8 +83,7 @@ class Model(_SchematicsModel):
     def to_manys(cls):  # NOQA
         """ Return a list of all the ToMany field types """
 
-        return []
-        # raise NotImplementedError
+        return cls.get_fields_by_class(ToManyType)
 
     @classproperty
     def to_ones(cls):  # NOQA

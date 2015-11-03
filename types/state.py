@@ -11,7 +11,7 @@ from schematics.exceptions import ConversionError
 from schematics.types import BaseType
 
 
-class StateType(BaseType):
+class Type(BaseType):
     """ U.S. state field with validation """
 
     MESSAGES = {

@@ -29,8 +29,8 @@ class Config(object):
     DATE_FILTERS = ('after', 'before')
     EQUAL_FILTERS = ('eq', 'neq')
     GEO_FILTERS = ('geo_near', 'geo_within')
-    LIST_FILTERS = ('in', 'nin')
-    NUM_FILTERS = ('gt', 'gte', 'len', 'lt', 'lte')
+    LIST_FILTERS = ('in', 'len', 'nin')
+    NUM_FILTERS = ('gt', 'gte', 'lt', 'lte')
     STR_FILTERS = ('contains',)
 
     QUERY_FILTERS = BOOL_FILTERS + DATE_FILTERS + EQUAL_FILTERS + \

@@ -19,7 +19,6 @@ class Middleware(object):
         """ Process the request before routing it. """
 
         # goldman.sess.cache = redis, memcached, whatever
-        # goldman.sess.idmap = goldman.config.STORE()
         goldman.sess.req = req
 
         if goldman.config.STORE:

@@ -76,11 +76,18 @@ def to_rest_rels(model, props):
     should be in a to_manys key.
     """
 
+    props['to_manys'] = {}
     props['to_ones'] = {}
 
     for key in model.to_ones:
         try:
             props['to_ones'][key] = props.pop(key)
+        except KeyError:
+            continue
+
+    for key in model.to_manys:
+        try:
+            props['to_manys'][key] = props.pop(key)
         except KeyError:
             continue
 

@@ -11,7 +11,7 @@ from schematics.exceptions import ConversionError
 from schematics.types import BaseType
 
 
-class PhoneNumberType(BaseType):
+class Type(BaseType):
     """ U.S. phone number validation """
 
     MESSAGES = {

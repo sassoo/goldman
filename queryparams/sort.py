@@ -72,17 +72,6 @@ class Sortable(object):
         return self.raw_field
 
 
-def from_req(req):
-    """ Determine the sorting preference by query parameter
-
-    Return an array of Sortable objects.
-    """
-
-    vals = req.get_param_as_list('sort') or [goldman.config.SORT]
-
-    return [Sortable(val) for val in vals]
-
-
 def _validate_field(param, fields):
     """ Ensure the sortable field exists on the model """
 
@@ -106,12 +95,20 @@ def _validate_no_rels(param, rels):
         }))
 
 
-def validate(req, model):
-    """ sort query param model based validations """
+def init(req, model):
+    """ Determine the sorting preference by query parameter
+
+    Return an array of Sortable objects.
+    """
 
     rels = model.relationships
     fields = model.all_fields
 
-    for param in req.sorts:
+    params = req.get_param_as_list('sort') or [goldman.config.SORT]
+    params = [Sortable(param) for param in params]
+
+    for param in params:
         _validate_no_rels(param, rels)
         _validate_field(param, fields)
+
+    return params

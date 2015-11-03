@@ -13,7 +13,7 @@
 from schematics.types import BaseType
 
 
-class RidType(BaseType):
+class Type(BaseType):
     """ Resource type of the underlying model """
 
     pass

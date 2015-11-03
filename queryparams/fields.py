@@ -47,32 +47,6 @@ def _parse_param(key, val):
         return rtype, fields
 
 
-def from_req(req):
-    """ Determine the sparse fields to limit the response to
-
-    Return a dict where the key is the resource type (rtype) &
-    the value is an array of string fields names to whitelist
-    against.
-
-    :param req:
-        Falcon request object
-    :return:
-        dict
-    """
-
-    vals = {}
-
-    for key, val in req.params.items():
-        try:
-            param_rtype, param_fields = _parse_param(key, val)
-        except (TypeError, ValueError):
-            continue
-
-        vals[param_rtype] = sorted([field.lower() for field in param_fields])
-
-    return vals
-
-
 def _validate_param(rtype, fields):
     """ Ensure the sparse fields exists on the models """
 
@@ -113,10 +87,32 @@ def _validate_req(req):
         }))
 
 
-def validate(req, model):  # pylint: disable=unused-argument
-    """ fields query param model based validations """
+def init(req, model):  # pylint: disable=unused-argument
+    """ Determine the sparse fields to limit the response to
 
-    _validate_req(req)
+    Return a dict where the key is the resource type (rtype) &
+    the value is an array of string fields names to whitelist
+    against.
 
-    for rtype, fields in req.fields.items():
-        _validate_param(rtype, fields)
+    :param req:
+        Falcon request object
+    :return:
+        dict
+    """
+
+    params = {}
+
+    for key, val in req.params.items():
+        try:
+            param_rtype, param_fields = _parse_param(key, val)
+        except (TypeError, ValueError):
+            continue
+
+        params[param_rtype] = sorted([field.lower() for field in param_fields])
+
+    if params:
+        _validate_req(req)
+        for rtype, fields in params.items():
+            _validate_param(rtype, fields)
+
+    return params

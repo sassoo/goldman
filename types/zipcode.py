@@ -11,7 +11,7 @@ from schematics.exceptions import StopValidation
 from schematics.types import StringType
 
 
-class ZipCodeType(StringType):
+class Type(StringType):
     """ U.S. zip code field with validation """
 
     MESSAGES = {
@@ -23,7 +23,7 @@ class ZipCodeType(StringType):
     def validate_zip_code(self, value):
         """ Schematics validator """
 
-        if not ZipCodeType.ZIPCODE_REGEX.match(value):
+        if not Type.ZIPCODE_REGEX.match(value):
             raise StopValidation(self.messages['zip_code'])
 
         return value

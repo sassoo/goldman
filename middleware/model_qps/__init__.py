@@ -14,19 +14,6 @@
     Currently supported query params are:
 
         fields, filter, include, page, & sort
-
-    Any supported (de)serializer of our models MUST honor these
-    query parameters!
-
-
-    Processing & coercsion will take place for each query parameter
-    regardless if the resource is backed by a model. However, if
-    the resource is backed by a model then additional model based
-    validations will be run to enforce certain rules.
-
-    It's also nice of an API to notify the user when they've done
-    something wrong rather than silently ignore it resulting in
-    unexpected output!
 """
 
 import goldman.queryparams.fields as fields
@@ -47,17 +34,11 @@ class Middleware(object):
         resource is being used for validations.
         """
 
-        req.fields = fields.from_req(req)
-        req.filters = filters.from_req(req)
-        req.includes = includes.from_req(req)
-        req.pages = pages.from_req(req)
-        req.sorts = sorts.from_req(req)
-
         if hasattr(resource, 'model'):
             model = resource.model
 
-            fields.validate(req, model)
-            filters.validate(req, model)
-            includes.validate(req, model)
-            pages.validate(req, model)
-            sorts.validate(req, model)
+            req.fields = fields.init(req, model)
+            req.filters = filters.init(req, model)
+            req.includes = includes.init(req, model)
+            req.pages = pages.init(req, model)
+            req.sorts = sorts.init(req, model)

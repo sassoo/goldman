@@ -15,7 +15,7 @@ from datetime import datetime as dt
 from schematics.types import DateTimeType as SchematicsDateTimeType
 
 
-class DateTimeType(SchematicsDateTimeType):
+class Type(SchematicsDateTimeType):
     """ Extended DateTimeType to support epoch timestamps """
 
     def to_native(self, value, context=None):
@@ -27,7 +27,7 @@ class DateTimeType(SchematicsDateTimeType):
         try:
             value = dt.utcfromtimestamp(value)
         except TypeError:
-            value = super(DateTimeType, self).to_native(value, context)
+            value = super(Type, self).to_native(value, context)
 
         return value
 
@@ -45,6 +45,6 @@ class DateTimeType(SchematicsDateTimeType):
         elif context and context.get('datetime_date'):
             pass
         else:
-            value = super(DateTimeType, self).to_primitive(value, context)
+            value = super(Type, self).to_primitive(value, context)
 
         return value

@@ -11,11 +11,20 @@ import goldman.signals as signals
 
 from ..base import Store as BaseStore
 from ..postgres.connect import Connect
+from goldman.queryparams.filter import FilterRel
 from goldman.utils.error_handlers import abort
 from goldman.utils.model_helpers import rtype_to_model
 
 
 CONNECT = Connect()
+
+
+ERRORS_TABLE = {
+    '42883': 'One or more of the query filters had an unexpected value '
+             'that could not be processed. This is a rare scenario & '
+             'it is unclear which field has the issue. Please review '
+             'your filters for any irregularities.',
+}
 
 
 FILTER_TABLE = {
@@ -29,6 +38,26 @@ FILTER_TABLE = {
     'after': '>',
     'before': '<',
 }
+
+
+def handle_exc(exc):
+    """ Given a database exception determine how to fail
+
+    Attempt to lookup a known error & abort on a meaningful
+    error. Otherwise issue a generic DatabaseUnavailable exception.
+
+    :param exc: psycopg2 exception
+    """
+
+    err = ERRORS_TABLE.get(exc.pgcode)
+
+    if err:
+        abort(exceptions.InvalidQueryParams(**{
+            'detail': err,
+            'parameter': 'filter',
+        }))
+
+    abort(exceptions.DatabaseUnavailable)
 
 
 class Store(BaseStore):
@@ -110,7 +139,7 @@ class Store(BaseStore):
         The key is constructed the way it is to ensure uniqueness,
         if we just used the key name then it could get clobbered.
 
-        Ultimately the WHERE statement will look something lik:
+        Ultimately the WHERE statement will look something like:
 
             age >= {age_gte}
 
@@ -122,30 +151,57 @@ class Store(BaseStore):
         :return: tuple (string, dict)
         """
 
+        def filter_rel(rel, oper, prop):
+            """ Given a FilterRel object return a SQL sub query """
+
+            stmt = """
+                   {local_field} = (SELECT {foreign_field} FROM {foreign_rtype}
+                                    WHERE {foreign_filter} {oper} %({prop})s)
+                   """
+
+            return stmt.format(
+                foreign_field=rel.foreign_field,
+                foreign_filter=rel.foreign_filter,
+                foreign_rtype=rel.foreign_rtype,
+                local_field=rel.local_field,
+                oper=oper,
+                prop=prop,
+            )
+
         param = {}
         stmts = []
 
         for filtr in filters:
-            prop = '{0}_{1}'.format(filtr.field, filtr.oper)
             oper = FILTER_TABLE[filtr.oper]
+            prop = '{field}_{oper}'.format(
+                field=filtr.field.replace('.', '_'),
+                oper=filtr.oper,
+            )
 
-            stmt = '{0} {1} %({2})s'.format(filtr.field, oper, prop)
+            if isinstance(filtr, FilterRel):
+                stmt = filter_rel(filtr, oper, prop)
+            else:
+                stmt = '{field} {oper} %({prop})s'.format(
+                    field=filtr.field,
+                    oper=oper,
+                    prop=prop,
+                )
 
             param.update({prop: filtr.val})
             stmts.append(stmt)
 
         if stmts:
             stmt = ' AND '.join(stmts)
-            stmt = ' WHERE {0}'.format(stmt)
+            stmt = ' WHERE ' + stmt
 
-            return stmt, param
+        return stmt, param
 
     @staticmethod
     def pages_query(pages):
         """ Turn the tuple of pages into a SQL LIMIT/OFFSET query """
 
         try:
-            return ' OFFSET {0} LIMIT {1}'.format(pages[0], pages[1])
+            return ' OFFSET {} LIMIT {}'.format(pages.offset, pages.limit)
         except (IndexError, TypeError):
             return ''
 
@@ -157,12 +213,12 @@ class Store(BaseStore):
 
         for sortable in sortables:
             if sortable.desc:
-                stmts.append('{0} DESC'.format(sortable))
+                stmts.append('{} DESC'.format(sortable))
             else:
-                stmts.append('{0} ASC'.format(sortable))
+                stmts.append('{} ASC'.format(sortable))
 
         if stmts:
-            return ' ORDER BY {0}'.format(', '.join(stmts))
+            return ' ORDER BY {}'.format(', '.join(stmts))
         else:
             return ''
 
@@ -285,7 +341,7 @@ class Store(BaseStore):
                     msg = '{}, exc code: {}'.format(msg, exc.pgcode)
 
                 print msg
-                abort(exceptions.DatabaseUnavailable)
+                handle_exc(exc)
 
             results = curs.fetchall()
 

@@ -10,6 +10,9 @@ from goldman.serializers.jsonapi_error import Serializer as \
     JSONAPIErrorSerializer
 
 
+__all__ = ['abort']
+
+
 def abort(error):
     """ Immediately raise our serializer with error(s)
 

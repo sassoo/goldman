@@ -13,7 +13,7 @@ from schematics.exceptions import ValidationError
 from schematics.types import StringType
 
 
-class ResourceType(StringType):
+class Type(StringType):
     """ Resource type of the underlying model """
 
     MESSAGES = {
@@ -24,7 +24,7 @@ class ResourceType(StringType):
 
         self.rtype = rtype
 
-        super(ResourceType, self).__init__(**kwargs)
+        super(Type, self).__init__(**kwargs)
 
     def to_native(self, value, context=None):
         """ Schematics deserializer override """
