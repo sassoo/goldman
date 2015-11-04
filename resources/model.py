@@ -52,12 +52,14 @@ class Resource(BaseResource):
         """ Find the model by id & serialize it back """
 
         responder = goldman.ModelResponder(self, req, resp)
+
         model = responder.find(self.rtype, rid)
+        props = responder.to_rest(model, include=req.includes)
 
         resp.last_modified = model.updated
         resp.location = rid_url(self.rtype, rid)
 
-        resp.serialize(responder.to_rest(model))
+        resp.serialize(props)
 
     def on_patch(self, req, resp, rid):
         """ Deserialize the payload & update the single item """

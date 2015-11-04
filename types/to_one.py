@@ -17,27 +17,30 @@ from schematics.types import BaseType
 class ToOne(object):
     """ ToOne object """
 
-    def __init__(self, rtype, rid=None):
+    def __init__(self, rtype, field, rid=None):
 
+        self.field = field
         self.rtype = rtype
         self.rid = rid
 
-    def __eq__(self, other):
-
-        try:
-            return self.rtype == other.rtype and self.rid == other.rid
-        except AttributeError:
-            return False
-
     def __repr__(self):
 
-        name = self.__class__.__name__
+        name = self.__class__.__name__,
 
         return '{}(\'{}\', rid=\'{}\')'.format(name, self.rtype, self.rid)
 
     def __str__(self):
 
         return self.rid
+
+    def load(self):
+        """ Return the model from the store """
+
+        store = goldman.sess.store
+
+        if self.rid:
+            return store.find(self.rtype, self.field, self.rid)
+        return None
 
 
 class Type(BaseType):
@@ -47,12 +50,12 @@ class Type(BaseType):
         'exists': 'resource can not be found'
     }
 
-    def __init__(self, foreign_field, foreign_rtype, **kwargs):
-
-        self.foreign_field = foreign_field
-        self.foreign_rtype = foreign_rtype
+    def __init__(self, rtype=None, field=None, **kwargs):
 
         super(Type, self).__init__(**kwargs)
+
+        self.field = field
+        self.rtype = rtype
 
     def to_native(self, value, context=None):
         """ Schematics deserializer override
@@ -63,7 +66,7 @@ class Type(BaseType):
         if isinstance(value, ToOne):
             return value
 
-        return ToOne(self.foreign_rtype, value)
+        return ToOne(self.rtype, self.field, rid=value)
 
     def to_primitive(self, value, context=None):
         """ Schematics serializer override
@@ -84,8 +87,7 @@ class Type(BaseType):
 
         if value:
             store = goldman.sess.store
-            model = store.find(self.foreign_rtype, self.foreign_field,
-                               value.rid)
+            model = store.find(value.rtype, value.field, value.rid)
 
             if not model:
                 raise ValidationError(self.messages['exists'])

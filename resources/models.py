@@ -41,14 +41,13 @@ class Resource(BaseResource):
 
         models = goldman.sess.store.search(self.rtype, **{
             'filters': req.filters,
-            'includes': req.includes,
             'pages': req.pages,
             'sorts': req.sorts,
         })
 
-        models = [responder.to_rest(model) for model in models]
+        props = [responder.to_rest(m, include=req.includes) for m in models]
 
-        resp.serialize(models)
+        resp.serialize(props)
 
     def on_post(self, req, resp):
         """ Deserialize the payload & create the new single item """

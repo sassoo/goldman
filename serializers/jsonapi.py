@@ -41,16 +41,6 @@ class Serializer(BaseSerializer):
 
         resp.body = json.dumps(body, indent=4)
 
-    def _serialize_includes(self, includes):
-        """ Make the compound (included) models JSON API compliant
-
-        :spec: jsonapi.org/format/#document-compound-documents
-        :param includes: XXX FINISH
-        :return: XXX FINISH
-        """
-
-        pass
-
     def _serialize_datas(self, datas):
         """ Turn the list into JSON API compliant resource objects
 
@@ -69,6 +59,7 @@ class Serializer(BaseSerializer):
         :return: dict
         """
 
+        included = []
         rels = {}
         rlink = rid_url(data['rtype'], data['rid'])
 
@@ -80,17 +71,22 @@ class Serializer(BaseSerializer):
             },
         }
 
-        for key, val in data['to_manys'].items():
-            rels.update(self._serialize_to_many(key, rlink))
+        for include in data['include']:
+            included.append(self._serialize_data(include))
+        del data['include']
 
-        for key, val in data['to_ones'].items():
+        for key, val in data['to_many'].items():
+            rels.update(self._serialize_to_many(key, val, rlink))
+        del data['to_many']
+
+        for key, val in data['to_one'].items():
             rels.update(self._serialize_to_one(key, val, rlink))
-
-        del data['to_manys']
-        del data['to_ones']
+        del data['to_one']
 
         if data:
             doc['attributes'] = data
+        if included:
+            doc['included'] = included
         if rels:
             doc['relationships'] = rels
 
@@ -123,6 +119,7 @@ class Serializer(BaseSerializer):
                 }
             }
         }
+
     def _serialize_to_one(self, key, val, rlink):
         """ Make a to_one JSON API compliant
 

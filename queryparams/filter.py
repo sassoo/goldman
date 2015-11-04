@@ -317,8 +317,8 @@ def init(req, model):
 
         if '.' in field:
             field_type = getattr(model, field.split('.')[0])
-            foreign_field = field_type.foreign_field
-            foreign_rtype = field_type.foreign_rtype
+            foreign_field = field_type.field
+            foreign_rtype = field_type.rtype
 
             param = FilterRel(foreign_field, foreign_rtype,
                               field, oper, val)

@@ -53,7 +53,7 @@ class Model(_SchematicsModel):
     def relationships(cls):  # NOQA
         """ Return a list of all the fields that are relationships """
 
-        return cls.to_manys + cls.to_ones
+        return cls.to_many + cls.to_one
 
     @classproperty
     def rid_field(cls):  # NOQA
@@ -80,13 +80,13 @@ class Model(_SchematicsModel):
         return list(set(email + lower))
 
     @classproperty
-    def to_manys(cls):  # NOQA
+    def to_many(cls):  # NOQA
         """ Return a list of all the ToMany field types """
 
         return cls.get_fields_by_class(ToManyType)
 
     @classproperty
-    def to_ones(cls):  # NOQA
+    def to_one(cls):  # NOQA
         """ Return a list of all the ToOne field types """
 
         return cls.get_fields_by_class(ToOneType)
