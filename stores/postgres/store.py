@@ -258,7 +258,7 @@ class Store(BaseStore):
         signals.post_create.send(model.__class__, model=model)
         signals.post_save.send(model.__class__, model=model)
 
-        return result[0]
+        return model.merge(result[0], clean=True)
 
     def delete(self, model):
         """ Given a model object instance delete it """

@@ -15,7 +15,8 @@ import goldman.exceptions as exceptions
 
 from goldman.types import ResourceType, RidType, ToManyType, ToOneType
 from goldman.utils.decorators import classproperty
-from schematics.exceptions import ConversionError
+from goldman.utils.error_handlers import abort
+from schematics.exceptions import ConversionError, ModelValidationError
 from schematics.models import Model as _SchematicsModel
 from schematics.types import EmailType
 
@@ -68,7 +69,7 @@ class Model(_SchematicsModel):
         return cls.get_fields_by_class(ResourceType)[0]
 
     @classproperty
-    def to_lowers(cls):  # NOQA
+    def to_lower(cls):  # NOQA
         """ Return a list of all the fields that should be lowercased
 
         This is done on fields with `lower=True`.
@@ -168,17 +169,12 @@ class Model(_SchematicsModel):
 
         dirty_fields = []
 
-        try:
-            current = self.to_native()
-        except ConversionError:
-            current = {}
+        for field in self.all_fields:
+            if field not in self._original:
+                dirty_fields.append(field)
 
-        for key, val in current.items():
-            if key not in self._original:
-                dirty_fields.append(key)
-
-            elif self._original[key] != val:
-                dirty_fields.append(key)
+            elif self._original[field] != getattr(self, field):
+                dirty_fields.append(field)
 
         return dirty_fields
 
@@ -188,6 +184,52 @@ class Model(_SchematicsModel):
 
         return getattr(self, self.rid_field)
 
+    def merge(self, data, clean=False, validate=False):
+        """ Merge a dict with the model
+
+        This is needed because schematics doesn't auto cast
+        values when assigned. This method allows us to ensure
+        incoming data & existing data on a model are always
+        coerced properly.
+
+        We create a temporary model instance with just the new
+        data so all the features of schematics deserialization
+        are still available.
+
+        :param data:
+            dict of potentially new different data to merge
+
+        :param clean:
+            set the dirty bit back to clean. This is useful
+            when the merge is coming from the store where
+            the data could have been mutated & the new merged
+            in data is now the single source of truth.
+
+        :param validate:
+            run the schematics validate method
+
+        :return:
+            nothing.. it has mutation side effects
+        """
+
+        try:
+            model = self.__class__(data)
+        except ConversionError as errors:
+            abort(self.to_exceptions(errors.messages))
+
+        for key, val in model.to_native().items():
+            if key in data:
+                setattr(self, key, val)
+
+        if validate:
+            try:
+                self.validate()
+            except ModelValidationError as errors:
+                abort(self.to_exceptions(errors.messages))
+
+        if clean:
+            self._original = self.to_native()
+
     def to_primitive(self, sparse_fields=None, *args, **kwargs):
         """ Override the schematics native to_primitive
 
@@ -196,11 +238,11 @@ class Model(_SchematicsModel):
         those field names. A whitelist effectively.
         """
 
-        props = super(Model, self).to_primitive(*args, **kwargs)
+        data = super(Model, self).to_primitive(*args, **kwargs)
 
         if sparse_fields:
-            for prop in props.keys():
-                if prop not in sparse_fields:
-                    del props[prop]
+            for key in data.keys():
+                if key not in sparse_fields:
+                    del data[key]
 
-        return props
+        return data

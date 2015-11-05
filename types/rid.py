@@ -11,10 +11,10 @@
     a single unique resource in the store.
 """
 
-from schematics.types import BaseType
+from schematics.types import StringType
 
 
-class Type(BaseType):
+class Type(StringType):
     """ Resource type of the underlying model """
 
     pass

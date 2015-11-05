@@ -16,7 +16,6 @@ import goldman
 import goldman.exceptions as exceptions
 
 from goldman.utils.error_handlers import abort
-from schematics.exceptions import ModelValidationError
 
 
 # pylint: disable=too-many-instance-attributes
@@ -73,7 +72,7 @@ class Responder(object):
     def _from_rest_lower(self, model, props):
         """ Lowercase fields requesting it during a REST deserialization """
 
-        for field in model.to_lowers:
+        for field in model.to_lower:
             try:
                 props[field] = props[field].lower()
             except (AttributeError, KeyError):
@@ -97,18 +96,7 @@ class Responder(object):
         self._from_rest_ignore(model, props)
         self._from_rest_lower(model, props)
 
-        # schematics will not auto cast these so after
-        # validating we then have to cast them
-        for key, val in props.items():
-            setattr(model, key, val)
-
-        try:
-            model.validate()
-        except ModelValidationError as errors:
-            abort(model.to_exceptions(errors.messages))
-
-        for key, val in model.to_native().items():
-            setattr(model, key, val)
+        model.merge(props, validate=True)
 
     def _to_rest_hide(self, model, props):
         """ Purge fields not allowed during a REST serialization

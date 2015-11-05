@@ -23,11 +23,14 @@ class ToOne(object):
         self.rtype = rtype
         self.rid = rid
 
+        self.model = None
+
     def __repr__(self):
 
         name = self.__class__.__name__,
 
-        return '{}(\'{}\', rid=\'{}\')'.format(name, self.rtype, self.rid)
+        return '{}(\'{}\', \'{}\', rid=\'{}\')'.format(name, self.rtype,
+                                                       self.field, self.rid)
 
     def __str__(self):
 
@@ -39,8 +42,9 @@ class ToOne(object):
         store = goldman.sess.store
 
         if self.rid:
-            return store.find(self.rtype, self.field, self.rid)
-        return None
+            self.model = store.find(self.rtype, self.field, self.rid)
+
+        return self.model
 
 
 class Type(BaseType):
