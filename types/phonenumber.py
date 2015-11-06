@@ -7,6 +7,7 @@
 
 import phonenumbers as pn
 
+from phonenumbers.phonenumberutil import NumberParseException
 from schematics.exceptions import ConversionError
 from schematics.types import BaseType
 
@@ -15,7 +16,8 @@ class Type(BaseType):
     """ U.S. phone number validation """
 
     MESSAGES = {
-        'convert': 'invalid U.S. phone number'
+        'convert': 'incorrect phone number format',
+        'invalid': 'not a reachable U.S. phone number',
     }
 
     def to_native(self, value, context=None):
@@ -36,10 +38,13 @@ class Type(BaseType):
 
         try:
             phone = pn.parse(value, 'US')
+            valid = pn.is_valid_number(phone)
+        except (NumberParseException, TypeError):
+            raise ConversionError(self.messages['convert'])
 
-            if not pn.is_valid_number(phone):
-                raise
-        except:
+        if not valid and pn.is_possible_number(phone):
+            raise ConversionError(self.messages['invalid'])
+        elif not valid:
             raise ConversionError(self.messages['convert'])
 
         phone.e164 = pn.format_number(phone, pn.PhoneNumberFormat.E164)

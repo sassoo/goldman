@@ -12,7 +12,9 @@ from schematics.exceptions import ValidationError
 def validate_int(value):
     """ Integer validator """
 
-    if value:
+    if value and not isinstance(value, int):
+        value = str(value)
+
         try:
             int(value)
         except (TypeError, ValueError):

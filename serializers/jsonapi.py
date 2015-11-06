@@ -92,33 +92,38 @@ class Serializer(BaseSerializer):
 
         return doc
 
-    def _serialize_to_many(self, key, val, rlink):
+    def _serialize_to_many(self, key, vals, rlink):
         """ Make a to_many JSON API compliant
 
         :spec:
             jsonapi.org/format/#document-resource-object-relationships
         :param key:
             the string name of the relationship field
-        :param val:
+        :param vals:
             array of dict's containing `rid` & `rtype` keys for the
-            to_many. None if the to_many has no values.
+            to_many, empty array if no values, & None if the to_manys
+            values are unknown
         :return:
             dict as documented in the spec link
         """
 
-        data = []
-
-        if val and val['rid']:
-            data = {'id': val['rid'], 'type': val['rtype']}
-
-        return {
+        rel = {
             key: {
-                'data': data,
+                'data': [],
                 'links': {
                     'related': rlink + '/' + key
                 }
             }
         }
+
+        if vals is None:
+            del rel[key]['data']
+        elif vals:
+            for val in vals:
+                val = {'id': val['rid'], 'type': val['rtype']}
+                rel[key]['data'].append(val)
+
+        return rel
 
     def _serialize_to_one(self, key, val, rlink):
         """ Make a to_one JSON API compliant
@@ -128,22 +133,24 @@ class Serializer(BaseSerializer):
         :param key:
             the string name of the relationship field
         :param val:
-            dict containing `rid` & `rtype` keys for the to_one.
-            None if the to_one has no value.
+            dict containing `rid` & `rtype` keys for the to_one &
+            None if the to_one is unknown
         :return:
             dict as documented in the spec link
         """
 
-        data = None
-
-        if val and val['rid']:
-            data = {'id': val['rid'], 'type': val['rtype']}
-
-        return {
+        rel = {
             key: {
-                'data': data,
+                'data': None,
                 'links': {
                     'related': rlink + '/' + key
                 }
             }
         }
+
+        if val is None:
+            del rel[key]['data']
+        elif val and val['rid']:
+            rel[key]['data'] = {'id': val['rid'], 'type': val['rtype']}
+
+        return rel

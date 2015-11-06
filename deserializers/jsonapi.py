@@ -87,10 +87,7 @@ class Normalizer(object):
             if not val['data']:
                 ret[key] = None
             else:
-                ret[key] = {
-                    'rtype': val['data']['type'],
-                    'rid': val['data']['id'],
-                }
+                ret[key] = val['data']['id']
 
         return ret
 
@@ -174,12 +171,17 @@ class Parser(object):
                              'MUST contain `id` & `type` fields.' % key, link)
 
                     elif data['id'] and not isinstance(data['id'], unicode):
-                        fail('The %s relationship\'s resource linkage `id`'
+                        fail('The %s relationship\'s resource linkage `id` '
                              '& `type` fields MUST be strings' % key, link)
 
                     elif not isinstance(data['type'], unicode):
-                        fail('The %s relationship\'s resource linkage `id`'
+                        fail('The %s relationship\'s resource linkage `id` '
                              '& `type` fields MUST be strings' % key, link)
+
+                elif val['data'] and isinstance(val['data'], list):
+                    fail('The %s relationship or any to many relationships '
+                         'is not currently supported. Instead, please modify '
+                         'the to one side directly.' % key, link)
 
                 elif val['data']:
                     fail('The relationship key %s MUST be a hash & '

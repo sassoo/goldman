@@ -22,22 +22,40 @@ class ToMany(object):
         self.rtype = rtype
         self.rid = rid
 
+        self._is_loaded = False
         self.models = []
+
+    def __eq__(self, other):
+        """ Compare other Sortable objects or strings """
+
+        try:
+            return self.field == other.field and \
+                self.rtype == other.rtype and \
+                self.rid == other.rid
+        except AttributeError:
+            return False
 
     def __repr__(self):
 
-        name = self.__class__.__name__,
+        name = self.__class__.__name__
 
         return '{}(\'{}\', \'{}\', \'{}\')'.format(name, self.rtype,
                                                    self.field, self.rid)
 
+    @property
+    def is_loaded(self):
+        """ Boolean indicating whether a load attempt has been made """
+
+        return self._is_loaded
+
     def load(self):
         """ Return the model from the store """
 
-        filtr = Filter(self.field, 'eq', self.rid)
+        filters = [Filter(self.field, 'eq', self.rid)]
         store = goldman.sess.store
 
-        self.models = store.search(self.rtype, filters=filtr)
+        self._is_loaded = True
+        self.models = store.search(self.rtype, filters=filters)
 
         return self.models
 
@@ -66,7 +84,21 @@ class Type(BaseType):
     def to_primitive(self, value, context=None):
         """ Schematics serializer override
 
-        :return: dict
+        The return values vary to indicate whether or not the
+        relationships is loaded with values (list with members),
+        loaded but no values (empty list), or never loaded &
+        unknown if values exist or not.
         """
 
-        return None
+        data = []
+
+        if not value.is_loaded:
+            return None
+
+        for model in value.models:
+            if context and context.get('rel_ids'):
+                data.append(model.rid_value)
+            else:
+                data.append({'rtype': model.rtype, 'rid': model.rid_value})
+
+        return data

@@ -115,15 +115,16 @@ class Responder(object):
     def _to_rest_include(self, model, props, includes):
         """ Fetch the models to be included """
 
+        includes = includes or []
         props['include'] = []
 
-        if includes:
-            for include in includes:
-                rel = getattr(model, include)
-                model = rel.load()
+        for include in includes:
+            rel = getattr(model, include)
 
-                if model:
-                    props['include'].append(self.to_rest(model))
+            try:
+                props['include'].append(self.to_rest(rel.model))
+            except AttributeError:
+                props['include'] += [self.to_rest(m) for m in rel.models]
 
     def _to_rest_rels(self, model, props):
         """ Move the relationships to appropriate location in the props
@@ -147,20 +148,33 @@ class Responder(object):
             except KeyError:
                 continue
 
-    def to_rest(self, model, include=None):
-        """ Convert the model into a dict for serialization """
+    def to_rest(self, model, includes=None):
+        """ Convert the model into a dict for serialization
+
+        Notify schematics of the sparse fields requested while
+        also forcing the resource id & resource type fields to always
+        be present no matter the request. Additionally, any includes
+        are implicitely added as well.
+
+        The load the includes, hide private fields, & munge the
+        relationships into a format the serializers are expecting.
+        """
 
         sparse = goldman.sess.req.fields.get(model.rtype, [])
 
         if sparse:
             sparse += [model.rid_field, model.rtype_field]
+            sparse += includes
 
-        props = model.to_primitive(sparse_fields=sparse)
+        props = model.to_primitive(
+            load_rels=includes,
+            sparse_fields=sparse,
+        )
         props['rid'] = props.pop(model.rid_field)
         props['rtype'] = props.pop(model.rtype_field)
 
+        self._to_rest_include(model, props, includes)
         self._to_rest_hide(model, props)
         self._to_rest_rels(model, props)
-        self._to_rest_include(model, props, include)
 
         return props

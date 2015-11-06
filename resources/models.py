@@ -38,14 +38,13 @@ class Resource(BaseResource):
         """
 
         responder = goldman.ModelResponder(self, req, resp)
-
         models = goldman.sess.store.search(self.rtype, **{
             'filters': req.filters,
             'pages': req.pages,
             'sorts': req.sorts,
         })
 
-        props = [responder.to_rest(m, include=req.includes) for m in models]
+        props = [responder.to_rest(m, includes=req.includes) for m in models]
 
         resp.serialize(props)
 
@@ -60,7 +59,7 @@ class Resource(BaseResource):
         goldman.sess.store.create(model)
 
         resp.last_modified = model.updated
-        resp.location = rid_url(self.rtype, model.rid_val)
+        resp.location = rid_url(self.rtype, model.rid_value)
         resp.status = falcon.HTTP_201
 
         resp.serialize(responder.to_rest(model))

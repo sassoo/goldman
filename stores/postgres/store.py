@@ -6,12 +6,14 @@
     etc from a postgresql database.
 """
 
+import goldman
 import goldman.exceptions as exceptions
 import goldman.signals as signals
 
 from ..base import Store as BaseStore
 from ..postgres.connect import Connect
 from goldman.queryparams.filter import FilterRel
+from goldman.queryparams.sort import Sortable
 from goldman.utils.error_handlers import abort
 from goldman.utils.model_helpers import rtype_to_model
 
@@ -116,10 +118,16 @@ class Store(BaseStore):
         This will be a string of comma separated field
         names prefixed by the models resource type.
 
+        TIP: to_manys are not located on the table in Postgres
+             & are instead application references, so any reference
+             to there column names should be pruned!
+
         :return: str
         """
 
-        cols = ', '.join(model.all_fields)
+        to_many = model.to_many
+        cols = [f for f in model.all_fields if f not in to_many]
+        cols = ', '.join(cols)
 
         return cols or None
 
@@ -201,8 +209,8 @@ class Store(BaseStore):
         """ Turn the tuple of pages into a SQL LIMIT/OFFSET query """
 
         try:
-            return ' OFFSET {} LIMIT {}'.format(pages.offset, pages.limit)
-        except (IndexError, TypeError):
+            return ' OFFSET {0} LIMIT {1}'.format(pages.offset, pages.limit)
+        except AttributeError:
             return ''
 
     @staticmethod
@@ -211,16 +219,16 @@ class Store(BaseStore):
 
         stmts = []
 
+        if not sortables:
+            sortables = [Sortable(goldman.config.SORT)]
+
         for sortable in sortables:
             if sortable.desc:
                 stmts.append('{} DESC'.format(sortable))
             else:
                 stmts.append('{} ASC'.format(sortable))
 
-        if stmts:
-            return ' ORDER BY {}'.format(', '.join(stmts))
-        else:
-            return ''
+        return ' ORDER BY {}'.format(', '.join(stmts))
 
     @staticmethod
     def to_pg(model):
@@ -266,10 +274,10 @@ class Store(BaseStore):
         signals.pre_delete.send(model.__class__, model=model)
         signals.acl_delete.send(model.__class__, model=model)
 
-        param = {'rid_val': self.to_pg(model)[model.rid_field]}
+        param = {'rid_value': self.to_pg(model)[model.rid_field]}
         query = """
                 DELETE FROM {table}
-                WHERE {rid_field} = %(rid_val)s
+                WHERE {rid_field} = %(rid_value)s
                 RETURNING {cols};
                 """
 
@@ -353,7 +361,10 @@ class Store(BaseStore):
         model = rtype_to_model(rtype)
         param = {}
         pages = self.pages_query(kwargs.get('pages'))
-        sorts = self.sorts_query(kwargs.get('sorts'))
+        sorts = self.sorts_query(kwargs.get(
+            'sorts',
+            [Sortable(goldman.config.SORT)]
+        ))
 
         query = 'SELECT {cols} FROM {table}'.format(
             cols=self.field_cols(model),
@@ -382,12 +393,12 @@ class Store(BaseStore):
         signals.acl_save.send(model.__class__, model=model)
 
         param = self.to_pg(model)
-        param['rid_val'] = param[model.rid_field]
+        param['rid_value'] = param[model.rid_field]
 
         query = """
                 UPDATE {table}
                 SET ({dirty_cols}) = ({dirty_vals})
-                WHERE {rid_field} = %(rid_val)s
+                WHERE {rid_field} = %(rid_value)s
                 RETURNING {cols};
                 """
 
@@ -404,4 +415,4 @@ class Store(BaseStore):
         signals.post_update.send(model.__class__, model=model)
         signals.post_save.send(model.__class__, model=model)
 
-        return result[0]
+        return model.merge(result[0], clean=True)

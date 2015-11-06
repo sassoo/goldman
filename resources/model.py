@@ -54,7 +54,7 @@ class Resource(BaseResource):
         responder = goldman.ModelResponder(self, req, resp)
 
         model = responder.find(self.rtype, rid)
-        props = responder.to_rest(model, include=req.includes)
+        props = responder.to_rest(model, includes=req.includes)
 
         resp.last_modified = model.updated
         resp.location = rid_url(self.rtype, rid)
@@ -71,7 +71,8 @@ class Resource(BaseResource):
         responder.from_rest(model, props)
         goldman.sess.store.update(model)
 
+        props = responder.to_rest(model, includes=req.includes)
         resp.last_modified = model.updated
         resp.location = rid_url(self.rtype, rid)
 
-        resp.serialize(responder.to_rest(model))
+        resp.serialize(props)

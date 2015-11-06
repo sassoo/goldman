@@ -45,12 +45,6 @@ class Model(_SchematicsModel):
         return fields.keys()
 
     @classproperty
-    def indexed_fields(cls):  # NOQA
-        """ Return a list of all the indexed fields """
-
-        return cls.get_fields_by_prop('index', True)
-
-    @classproperty
     def relationships(cls):  # NOQA
         """ Return a list of all the fields that are relationships """
 
@@ -179,7 +173,7 @@ class Model(_SchematicsModel):
         return dirty_fields
 
     @property
-    def rid_val(self):
+    def rid_value(self):
         """ Return the resource id field value """
 
         return getattr(self, self.rid_field)
@@ -230,13 +224,25 @@ class Model(_SchematicsModel):
         if clean:
             self._original = self.to_native()
 
-    def to_primitive(self, sparse_fields=None, *args, **kwargs):
+    def to_primitive(self, load_rels=None, sparse_fields=None, *args,
+                     **kwargs):
         """ Override the schematics native to_primitive
 
-        This supports sparse_fields where a list of field names
-        can be provided which limits the serialization to ONLY
-        those field names. A whitelist effectively.
+        :param loads_rels:
+            List of field names that are relationships that should
+            be loaded for the serialization process. This needs
+            to be run before the native schematics to_primitive is
+            run so the proper data is serialized.
+
+        :param sparse_fields:
+            List of field names that can be provided which limits
+            the serialization to ONLY those field names. A whitelist
+            effectively.
         """
+
+        if load_rels:
+            for rel in load_rels:
+                getattr(self, rel).load()
 
         data = super(Model, self).to_primitive(*args, **kwargs)
 

@@ -7,7 +7,7 @@
 
 import re
 
-from schematics.exceptions import StopValidation
+from schematics.exceptions import ValidationError
 from schematics.types import StringType
 
 
@@ -24,6 +24,6 @@ class Type(StringType):
         """ Schematics validator """
 
         if not Type.ZIPCODE_REGEX.match(value):
-            raise StopValidation(self.messages['zip_code'])
+            raise ValidationError(self.messages['zip_code'])
 
         return value
