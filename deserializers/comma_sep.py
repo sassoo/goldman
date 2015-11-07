@@ -92,7 +92,7 @@ class Deserializer(BaseDeserializer):
 
     MIMETYPE = goldman.CSV_MIMETYPE
 
-    def deserialize(self, req, data=None):
+    def deserialize(self, data=None):
         """ Invoke the deserializer
 
         If the payload is a collection (more than 1 records)
@@ -101,13 +101,12 @@ class Deserializer(BaseDeserializer):
         If the payload is a single item then the normalized
         dict will be returned (not a list)
 
-        :param req: request object
         :return: list or dict
         """
 
         data = []
 
-        if req.content_type_params.get('header') != 'present':
+        if self.req.content_type_params.get('header') != 'present':
             abort(exceptions.InvalidRequestHeader(**{
                 'detail': 'When using text/csv your Content-Type '
                           'header MUST have a header=present parameter '
@@ -116,7 +115,7 @@ class Deserializer(BaseDeserializer):
             }))
 
         try:
-            reader = csv.DictReader(req.stream)
+            reader = csv.DictReader(self.req.stream)
 
             self._validate_field_headers(reader)
 
@@ -124,7 +123,7 @@ class Deserializer(BaseDeserializer):
                 Parser.run(row, reader)
 
                 row = Normalizer.run(row, reader)
-                row = super(Deserializer, self).deserialize(req, data)
+                row = super(Deserializer, self).deserialize(data)
 
                 data.append(row)
         except csv.Error:

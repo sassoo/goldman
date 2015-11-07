@@ -27,6 +27,7 @@ class API(falcon.API):
     """
 
     MIDDLEWARE = []
+    RESOURCES = []
     ROUTES = []
 
     def __init__(self):
@@ -47,8 +48,28 @@ class API(falcon.API):
             response_type=Response,
         )
 
+        self._load_resources()
         self._load_routes()
         self.set_error_serializer(self._error_serializer)
+
+    def _load_resources(self):
+        """ Load all the native goldman resources.
+
+        The route or API endpoint will be automatically determined
+        based on the resource object instance passed in.
+        """
+
+        for resource in self.RESOURCES:
+            if isinstance(resource, goldman.ModelsResource):
+                route = '/%s' % resource.rtype
+            elif isinstance(resource, goldman.ModelResource):
+                route = '/%s/{rid}' % resource.rtype
+            elif isinstance(resource, goldman.RelatedResource):
+                route = '/%s/{rid}/{related}' % resource.rtype
+            else:
+                raise TypeError('unsupported resource type')
+
+            self.add_route(*(route, resource))
 
     def _load_routes(self):
         """ Load all the routes.

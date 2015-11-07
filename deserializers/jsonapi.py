@@ -249,22 +249,21 @@ class Deserializer(BaseDeserializer):
 
     MIMETYPE = goldman.JSONAPI_MIMETYPE
 
-    def deserialize(self, req, data=None):
+    def deserialize(self, data=None):
         """ Invoke the deserializer
 
-        :param req: request object
         :param data: single object to be deserialized
         :return: normalized dict
         """
 
         try:
-            body = json.loads(req.get_body())
+            body = json.loads(self.req.get_body())
         except (AttributeError, ValueError, UnicodeDecodeError):
             abort(exceptions.InvalidRequestBody)
 
-        Parser.run(req, body)
+        Parser.run(self.req, body)
 
         data = Normalizer.run(body)
-        data = super(Deserializer, self).deserialize(req, data)
+        data = super(Deserializer, self).deserialize(data)
 
         return data

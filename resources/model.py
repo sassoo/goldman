@@ -12,7 +12,6 @@ import goldman
 import falcon
 
 from ..resources.base import Resource as BaseResource
-from goldman.utils.url_helpers import rid_url
 
 
 class Resource(BaseResource):
@@ -41,8 +40,8 @@ class Resource(BaseResource):
         is returned.
         """
 
-        responder = goldman.ModelResponder(self, req, resp)
-        model = responder.find(self.rtype, rid)
+        rondr = goldman.ModelResponder(self, req, resp, rid=rid)
+        model = rondr.find(self.rtype, rid)
 
         goldman.sess.store.delete(model)
 
@@ -51,28 +50,27 @@ class Resource(BaseResource):
     def on_get(self, req, resp, rid):
         """ Find the model by id & serialize it back """
 
-        responder = goldman.ModelResponder(self, req, resp)
-
-        model = responder.find(self.rtype, rid)
-        props = responder.to_rest(model, includes=req.includes)
+        rondr = goldman.ModelResponder(self, req, resp, rid=rid)
+        model = rondr.find(self.rtype, rid)
+        props = rondr.to_rest(model, includes=req.includes)
 
         resp.last_modified = model.updated
-        resp.location = rid_url(self.rtype, rid)
+        resp.location = req.path
 
         resp.serialize(props)
 
     def on_patch(self, req, resp, rid):
         """ Deserialize the payload & update the single item """
 
-        responder = goldman.ModelResponder(self, req, resp)
+        rondr = goldman.ModelResponder(self, req, resp, rid=rid)
         props = req.deserialize()
-        model = responder.find(self.rtype, rid)
+        model = rondr.find(self.rtype, rid)
 
-        responder.from_rest(model, props)
+        rondr.from_rest(model, props)
         goldman.sess.store.update(model)
 
-        props = responder.to_rest(model, includes=req.includes)
+        props = rondr.to_rest(model, includes=req.includes)
         resp.last_modified = model.updated
-        resp.location = rid_url(self.rtype, rid)
+        resp.location = req.path
 
         resp.serialize(props)

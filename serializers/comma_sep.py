@@ -15,14 +15,11 @@ class Serializer(BaseSerializer):
 
     MIMETYPE = goldman.CSV_MIMETYPE
 
-    def serialize(self, resp, data):
+    def serialize(self, data):
         """ Determine & invoke the proper serializer method
 
         If data is a list then the serialize_datas method will
         be run otherwise serialize_data.
-
-        :param data: list or single object to be serialized
-        :param resp: response object
         """
 
         pass

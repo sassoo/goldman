@@ -47,10 +47,10 @@ class ToOne(object):
     def load(self):
         """ Return the model from the store """
 
-        store = goldman.sess.store
-        self._is_loaded = True
+        if self.rid and not self._is_loaded:
+            store = goldman.sess.store
+            self._is_loaded = True
 
-        if self.rid:
             self.model = store.find(self.rtype, self.field, self.rid)
 
         return self.model
@@ -66,7 +66,8 @@ class Type(BaseType):
     def __init__(self, field=None, rtype=None, skip_exists=False,
                  typeness=int, **kwargs):
 
-        super(Type, self).__init__(**kwargs)
+        _default = ToOne(field, rtype)
+        super(Type, self).__init__(default=_default, **kwargs)
 
         self.field = field
         self.rtype = rtype
@@ -91,13 +92,10 @@ class Type(BaseType):
         :return: dict
         """
 
-        if not value.is_loaded:
-            return None
-
         if context and context.get('rel_ids'):
             return value.rid
-
-        return {'rtype': value.rtype, 'rid': value.rid}
+        else:
+            return {'rtype': value.rtype, 'rid': value.rid}
 
     def validate_to_one(self, value):
         """ Check if the to_one should exist & casts properly """

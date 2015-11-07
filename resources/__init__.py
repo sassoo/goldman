@@ -11,10 +11,12 @@
 from ..resources.base import Resource as BaseResource
 from ..resources.model import Resource as ModelResource
 from ..resources.models import Resource as ModelsResource
+from ..resources.related import Resource as RelatedResource
 
 
 RESOURCES = [
     BaseResource,
     ModelResource,
     ModelsResource,
+    RelatedResource,
 ]

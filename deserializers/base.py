@@ -24,8 +24,11 @@ class Deserializer(object):
 
     MIMETYPE = ''
 
+    def __init__(self, req):
+        self.req = req
+
     # pylint: disable=unused-argument
-    def deserialize(self, req, data):
+    def deserialize(self, data):
         """ Invoke the deserializer
 
         The base deserializer may eventually need to do some
@@ -34,8 +37,6 @@ class Deserializer(object):
 
         :param data:
             the already deserialized data
-        :param req:
-            falcon request object
         :return:
             possibly mutated data param
         """

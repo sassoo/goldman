@@ -30,12 +30,8 @@ class Paginator(object):
 
     def __init__(self, limit, offset):
 
-        try:
-            self.limit = self._cast_page(limit)
-            self.offset = self._cast_page(offset)
-        except ValueError:
-            self.error = True
-
+        self.limit = self._cast_page(limit)
+        self.offset = self._cast_page(offset)
         self.total = 0
 
     def __eq__(self, other):
@@ -55,6 +51,56 @@ class Paginator(object):
     def __str__(self):
 
         return '{}, {}'.format(self.limit, self.offset)
+
+    @property
+    def current(self):
+        """ Generate query parameters for the current page """
+
+        return 'page[offset]=%s&page[limit]=%s' % (self.offset, self.limit)
+
+    @property
+    def first(self):
+        """ Generate query parameters for the first page """
+
+        if self.total and self.limit < self.total:
+            return 'page[offset]=0&page[limit]=%s' % self.limit
+
+    @property
+    def last(self):
+        """ Generate query parameters for the last page """
+
+        if self.limit > self.total:
+            return None
+        elif self.offset >= self.total:
+            return None
+        else:
+            offset = (self.total / self.limit) * self.limit
+            limit = self.total - offset
+
+            return 'page[offset]=%s&page[limit]=%s' % (offset, limit)
+
+    @property
+    def more(self):
+        """ Generate query parameters for the next page """
+
+        if self.offset + self.limit + self.limit >= self.total:
+            return self.last
+        else:
+            offset = self.offset + self.limit
+
+            return 'page[offset]=%s&page[limit]=%s' % (offset, self.limit)
+
+    @property
+    def prev(self):
+        """ Generate query parameters for the prev page """
+
+        if self.total:
+            if self.offset - self.limit - self.limit < 0:
+                return self.first
+            else:
+                offset = self.offset - self.limit
+
+                return 'page[offset]=%s&page[limit]=%s' % (offset, self.limit)
 
     @staticmethod
     def _cast_page(val):

@@ -93,12 +93,9 @@ class Request(FalconRequest):
         This allows code to later run request.deserialize() &
         have it always call the deserialize method on the proper
         deserializer.
-
-        The first argument to a deserializers deserialize method
-        is always the request object.
         """
 
-        return self.deserializer.deserialize(self, *args, **kwargs)
+        return self.deserializer.deserialize(*args, **kwargs)
 
     def get_body(self):
         """ Read in the request stream & return it as is

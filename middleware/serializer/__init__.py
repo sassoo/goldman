@@ -55,4 +55,4 @@ class Middleware(object):
                 abort(exceptions.SerializerNotAllowed)
 
             else:
-                resp.serializer = serializer()
+                resp.serializer = serializer(req, resp)

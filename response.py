@@ -23,9 +23,6 @@ class Response(FalconResponse):
 
         This allows code to later run response.serialize() & have it
         always call the serialize method on the proper serializer.
-
-        The first argument to a serializers serialize method is
-        always the response object.
         """
 
-        return self.serializer.serialize(self, *args, **kwargs)
+        return self.serializer.serialize(*args, **kwargs)

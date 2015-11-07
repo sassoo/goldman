@@ -11,16 +11,20 @@ class Serializer(object):
 
     MIMETYPE = ''
 
+    def __init__(self, req, resp):
+
+        self.req = req
+        self.resp = resp
+
     # pylint: disable=unused-argument
-    def serialize(self, resp, data):
+    def serialize(self, data):
         """ Invoke the serializer
 
         These are common things for all serializers. Mostly,
         stuff to do with managing headers.
 
         :param data: the already serialized data
-        :param resp: response object
         """
 
-        if not resp.content_type:
-            resp.content_type = getattr(self, 'MIMETYPE')
+        if not self.resp.content_type:
+            self.resp.content_type = getattr(self, 'MIMETYPE')

@@ -22,7 +22,8 @@ from goldman.utils.error_handlers import abort
 class Responder(object):
     """ Model responder mixin """
 
-    def __init__(self, resource, req, resp):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def __init__(self, resource, req, resp, rid=None):
         """ Initialize all the model responder
 
         This responder should be passed in the same args as a
@@ -34,6 +35,25 @@ class Responder(object):
         """
 
         self._model = resource.model
+
+        if rid:
+            self._validate_rid(rid)
+
+    def _validate_rid(self, rid):
+        """ Ensure the optionally provided resource id is proper """
+
+        rid_type = getattr(self._model, self._model.rid_field)
+        typeness = rid_type.typeness
+
+        if typeness is int:
+            try:
+                int(rid)
+            except (TypeError, ValueError):
+                abort(exceptions.InvalidURL(**{
+                    'detail': 'The resource id {} in your request is not '
+                              'syntactically correct. Only numeric type '
+                              'resource id\'s are allowed'.format(rid)
+                }))
 
     def find(self, rtype, rid):
         """ Find a model from the store by resource id """
@@ -121,9 +141,9 @@ class Responder(object):
         for include in includes:
             rel = getattr(model, include)
 
-            try:
+            if hasattr(rel, 'model') and rel.model:
                 props['include'].append(self.to_rest(rel.model))
-            except AttributeError:
+            elif hasattr(rel, 'models') and rel.models:
                 props['include'] += [self.to_rest(m) for m in rel.models]
 
     def _to_rest_rels(self, model, props):

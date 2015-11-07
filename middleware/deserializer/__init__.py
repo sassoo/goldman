@@ -63,4 +63,4 @@ class Middleware(object):
                 abort(exceptions.DeserializerNotAllowed)
 
             else:
-                req.deserializer = deserializer()
+                req.deserializer = deserializer(req)

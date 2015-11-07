@@ -20,26 +20,36 @@ class Serializer(BaseSerializer):
 
     MIMETYPE = goldman.JSONAPI_MIMETYPE
 
-    def serialize(self, resp, data):
+    def serialize(self, data):
         """ Determine & invoke the proper serializer method
 
         If data is a list then the serialize_datas method will
         be run otherwise serialize_data.
-
-        :param data: list or single object to be serialized
-        :param resp: response object
         """
 
-        body = {'jsonapi': {'version': goldman.config.JSONAPI_VERSION}}
+        body = {
+            'jsonapi': {
+                'version': goldman.config.JSONAPI_VERSION
+            },
+            'links': {
+                'self': self.req.path
+            },
+            'meta': {}
+        }
 
         if isinstance(data, list):
+            body['meta']['total'] = self.req.pages.total
+
             body.update({'data': self._serialize_datas(data)})
-        else:
+            body.update({'links': self._serialize_pages()})
+        elif data:
             body.update({'data': self._serialize_data(data)})
+        else:
+            body.update({'data': None})
 
-        super(Serializer, self).serialize(resp, data)
+        super(Serializer, self).serialize(data)
 
-        resp.body = json.dumps(body, indent=4)
+        self.resp.body = json.dumps(body, indent=4)
 
     def _serialize_datas(self, datas):
         """ Turn the list into JSON API compliant resource objects
@@ -91,6 +101,38 @@ class Serializer(BaseSerializer):
             doc['relationships'] = rels
 
         return doc
+
+    def _serialize_pages(self):
+        """ Update the links dict with pagination info """
+
+        path = self.req.path
+        pages = self.req.pages
+
+        links = {
+            'self': '%s?%s' % (path, pages.current),
+            'first': None,
+            'last': None,
+            'next': None,
+            'prev': None,
+        }
+
+        first = pages.first
+        if first:
+            links['first'] = '%s?%s' % (path, first)
+
+        last = pages.last
+        if last:
+            links['last'] = '%s?%s' % (path, last)
+
+        more = pages.more
+        if more:
+            links['next'] = '%s?%s' % (path, more)
+
+        prev = pages.prev
+        if prev:
+            links['prev'] = '%s?%s' % (path, prev)
+
+        return links
 
     def _serialize_to_many(self, key, vals, rlink):
         """ Make a to_many JSON API compliant
@@ -148,9 +190,7 @@ class Serializer(BaseSerializer):
             }
         }
 
-        if val is None:
-            del rel[key]['data']
-        elif val and val['rid']:
+        if val['rid']:
             rel[key]['data'] = {'id': val['rid'], 'type': val['rtype']}
 
         return rel

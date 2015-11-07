@@ -78,8 +78,8 @@ class Type(BaseType):
 
         if isinstance(value, ToMany):
             return value
-
-        return ToMany(self.rtype, self.field, value)
+        else:
+            return ToMany(self.rtype, self.field, value)
 
     def to_primitive(self, value, context=None):
         """ Schematics serializer override

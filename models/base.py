@@ -29,7 +29,7 @@ class Model(_SchematicsModel):
 
     def __init__(self, data=None, **kwargs):
 
-        super(Model, self).__init__(data, **kwargs)
+        super(Model, self).__init__(data, strict=False, **kwargs)
 
         try:
             self._original = self.to_native()

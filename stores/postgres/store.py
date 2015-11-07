@@ -219,14 +219,11 @@ class Store(BaseStore):
 
         stmts = []
 
-        if not sortables:
-            sortables = [Sortable(goldman.config.SORT)]
-
         for sortable in sortables:
             if sortable.desc:
-                stmts.append('{} DESC'.format(sortable))
+                stmts.append('{} DESC'.format(sortable.field))
             else:
-                stmts.append('{} ASC'.format(sortable))
+                stmts.append('{} ASC'.format(sortable.field))
 
         return ' ORDER BY {}'.format(', '.join(stmts))
 
@@ -362,11 +359,14 @@ class Store(BaseStore):
         param = {}
         pages = self.pages_query(kwargs.get('pages'))
         sorts = self.sorts_query(kwargs.get(
-            'sorts',
-            [Sortable(goldman.config.SORT)]
+            'sorts', [Sortable(goldman.config.SORT)]
         ))
 
-        query = 'SELECT {cols} FROM {table}'.format(
+        query = """
+                SELECT {cols}, count(*) OVER() as _count
+                FROM {table}
+                """
+        query = query.format(
             cols=self.field_cols(model),
             table=rtype,
         )
@@ -380,9 +380,13 @@ class Store(BaseStore):
         query += pages
 
         results = self.query(query, param=param)
-        results = [model(result) for result in results]
+        models = [model(result) for result in results]
 
-        return results
+        pages = kwargs.get('pages')
+        if pages and results:
+            pages.total = results[0]['_count']
+
+        return models
 
     def update(self, model):
         """ Given a model object instance update it """
