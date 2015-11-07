@@ -16,6 +16,7 @@ import goldman
 import goldman.exceptions as exceptions
 
 from goldman.utils.error_handlers import abort
+from schematics.types import IntType
 
 
 # pylint: disable=too-many-instance-attributes
@@ -42,10 +43,9 @@ class Responder(object):
     def _validate_rid(self, rid):
         """ Ensure the optionally provided resource id is proper """
 
-        rid_type = getattr(self._model, self._model.rid_field)
-        typeness = rid_type.typeness
+        rid_field = getattr(self._model, self._model.rid_field)
 
-        if typeness is int:
+        if isinstance(rid_field, IntType):
             try:
                 int(rid)
             except (TypeError, ValueError):

@@ -13,7 +13,7 @@
 
 import goldman.exceptions as exceptions
 
-from goldman.types import ResourceType, RidType, ToManyType, ToOneType
+from goldman.types import ResourceType, ToManyType, ToOneType
 from goldman.utils.decorators import classproperty
 from goldman.utils.error_handlers import abort
 from schematics.exceptions import ConversionError, ModelValidationError
@@ -54,7 +54,7 @@ class Model(_SchematicsModel):
     def rid_field(cls):  # NOQA
         """ Return the resource id field str name """
 
-        return cls.get_fields_by_class(RidType)[0]
+        return cls.get_fields_by_prop('rid', True)[0]
 
     @classproperty
     def rtype_field(cls):  # NOQA
