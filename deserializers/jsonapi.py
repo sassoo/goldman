@@ -18,8 +18,8 @@ import goldman
 import goldman.exceptions as exceptions
 import json
 
-from goldman.utils.error_handlers import abort
 from ..deserializers.base import Deserializer as BaseDeserializer, fail
+from goldman.utils.error_handlers import abort
 
 
 class Normalizer(object):

@@ -8,24 +8,17 @@
 """
 
 import goldman
+import json
+
+from ..serializers.base import Serializer as BaseSerializer
 
 
-class Serializer(object):
+class Serializer(BaseSerializer):
     """ JSON compliant serializer """
 
     MIMETYPE = goldman.JSON_MIMETYPE
 
-    def serialize(self, obj):
-        """ Foobar """
+    def serialize(self, data):
+        """ Call json.dumps & let it rip """
 
-        pass
-
-    def serialize_collection(self, collection):
-        """ Foobar """
-
-        pass
-
-    def serialize_resource(self, resource):
-        """ Foobar """
-
-        pass
+        self.resp.body = json.dumps(data)

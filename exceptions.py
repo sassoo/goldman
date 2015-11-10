@@ -507,6 +507,30 @@ class ValidationFailure(APIException):
 
 
 """
+    500 Internal Server Error
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+"""
+
+
+class GenericError(APIException):
+    """ Something puked within our API & is probably 3rd party
+
+    This exception supports detail & links overrides.
+    """
+
+    DETAIL = 'Generic internal server error'
+
+    def __init__(self, **kwargs):
+        super(GenericError, self).__init__(**{
+            'code': 'generic_error',
+            'detail': kwargs.get('detail', self.DETAIL),
+            'links': kwargs.get('links'),
+            'status': '500 Internal Server Error',
+            'title': 'The request had an unexpected error',
+        })
+
+
+"""
     503 Service Unavailable
     ~~~~~~~~~~~~~~~~~~~~~~~
 """

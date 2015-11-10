@@ -63,10 +63,16 @@ class ToMany(object):
 class Type(BaseType):
     """ Custom field for our ToMany relationships """
 
-    def __init__(self, field=None, rtype=None, **kwargs):
+    def __init__(self, deserialize_from='rid', from_rest=False, field=None,
+                 rtype=None, **kwargs):
 
         self.field = field
         self.rtype = rtype
+
+        kwargs = kwargs.update({
+            'deserialize_from': deserialize_from,
+            'from_rest': from_rest,
+        })
 
         super(Type, self).__init__(**kwargs)
 

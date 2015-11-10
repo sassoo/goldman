@@ -63,17 +63,18 @@ class Type(BaseType):
         'exists': 'item not found',
     }
 
-    def __init__(self, field=None, rtype=None, skip_exists=False,
+    def __init__(self, field='rid', rtype=None, skip_exists=False,
                  typeness=int, **kwargs):
 
         _default = ToOne(field, rtype)
-        super(Type, self).__init__(default=_default, **kwargs)
 
         self.field = field
         self.rtype = rtype
 
         self.skip_exists = skip_exists
         self.typeness = typeness
+
+        super(Type, self).__init__(default=_default, **kwargs)
 
     def to_native(self, value, context=None):
         """ Schematics deserializer override

@@ -12,6 +12,7 @@
 """
 
 import goldman.exceptions as exceptions
+import goldman.signals as signals
 
 from goldman.types import ResourceType, ToManyType, ToOneType
 from goldman.utils.decorators import classproperty
