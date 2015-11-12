@@ -53,7 +53,7 @@ from schematics.types import BooleanType, IntType, StringType
 class American(goldman.BaseModel):
     """ American model """
 
-    RTYPE = 'american'
+    RTYPE = 'americans'
 
     """
     The attrs below are the models fields
@@ -88,7 +88,7 @@ class American(goldman.BaseModel):
 class Truck(goldman.BaseModel):
     """ Truck model """
 
-    RTYPE = 'truck'
+    RTYPE = 'trucks'
 
     """
     The attrs below are the models fields
