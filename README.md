@@ -19,7 +19,7 @@ Need some examples? How about a few resources like an American & their Truck, yo
 ```python
 import goldman
 
-from app.models import People, Car
+from app.models import American, Truck
 
 
 class API(goldman.API):
