@@ -316,12 +316,12 @@ class Store(BaseStore):
         )
 
         signals.pre_find.send(model.__class__, model=model)
-        signals.acl_find.send(model.__class__, model=model)
 
         result = self.query(query, param=param)
         if result:
             result = model(result[0])
-            signals.post_find.send(result.__class__, model=result)
+            signals.acl_find.send(model.__class__, model=model)
+            signals.post_find.send(model.__class__, model=result)
 
         return result
 
@@ -379,8 +379,14 @@ class Store(BaseStore):
         query += sorts
         query += pages
 
+        signals.pre_search.send(model.__class__, model=model)
+
         results = self.query(query, param=param)
         models = [model(result) for result in results]
+
+        if models:
+            signals.acl_search.send(model.__class__, models=models)
+            signals.post_search.send(model.__class__, models=results)
 
         pages = kwargs.get('pages')
         if pages and results:
