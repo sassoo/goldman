@@ -27,6 +27,15 @@ class ToOne(object):
         self._is_loaded = False
         self.model = None
 
+    def __eq__(self, other):
+
+        try:
+            return self.field == other.field and \
+                self.rtype == other.rtype and \
+                self.rid == other.rid
+        except AttributeError:
+            return False
+
     def __repr__(self):
 
         name = self.__class__.__name__
