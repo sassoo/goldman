@@ -29,6 +29,10 @@ acl_save = blinker.signal('acl_save')
 pre_save = blinker.signal('pre_save')
 post_save = blinker.signal('post_save')
 
+acl_search = blinker.signal('acl_search')
+pre_search = blinker.signal('pre_search')
+post_search = blinker.signal('post_search')
+
 acl_update = blinker.signal('acl_update')
 pre_update = blinker.signal('pre_update')
 post_update = blinker.signal('post_update')
