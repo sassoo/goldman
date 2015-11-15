@@ -12,7 +12,7 @@ import goldman.signals as signals
 
 from ..base import Store as BaseStore
 from ..postgres.connect import Connect
-from goldman.queryparams.filter import FilterRel
+from goldman.queryparams.filter import FilterOr, FilterRel
 from goldman.queryparams.sort import Sortable
 from goldman.utils.error_handlers import abort
 from goldman.utils.model_helpers import rtype_to_model
@@ -159,7 +159,44 @@ class Store(BaseStore):
         :return: tuple (string, dict)
         """
 
-        def filter_rel(rel, oper, prop):
+        def _filter(filtr):
+            """ Process each individual Filter object """
+
+            oper = FILTER_TABLE[filtr.oper]
+            prop = '{field}_{oper}'.format(
+                field=filtr.field.replace('.', '_'),
+                oper=filtr.oper,
+            )
+
+            if isinstance(filtr, FilterRel):
+                stmt = _filter_rel(filtr, oper, prop)
+            else:
+                stmt = '{field} {oper} %({prop})s'.format(
+                    field=filtr.field,
+                    oper=oper,
+                    prop=prop,
+                )
+
+            return stmt, {prop: filtr.val}
+
+        def _filter_or(filters):
+            """ Given a FilterOr object return a SQL query """
+
+            param = {}
+            stmts = []
+
+            for filtr in filters:
+                vals = _filter(filtr)
+
+                param.update(vals[1])
+                stmts.append(vals[0])
+
+            stmt = ' OR '.join(stmts)
+            stmt = '({})'.format(stmt)
+
+            return stmt, param
+
+        def _filter_rel(rel, oper, prop):
             """ Given a FilterRel object return a SQL sub query """
 
             stmt = """
@@ -180,23 +217,13 @@ class Store(BaseStore):
         stmts = []
 
         for filtr in filters:
-            oper = FILTER_TABLE[filtr.oper]
-            prop = '{field}_{oper}'.format(
-                field=filtr.field.replace('.', '_'),
-                oper=filtr.oper,
-            )
-
-            if isinstance(filtr, FilterRel):
-                stmt = filter_rel(filtr, oper, prop)
+            if isinstance(filtr, FilterOr):
+                vals = _filter_or(filtr)
             else:
-                stmt = '{field} {oper} %({prop})s'.format(
-                    field=filtr.field,
-                    oper=oper,
-                    prop=prop,
-                )
+                vals = _filter(filtr)
 
-            param.update({prop: filtr.val})
-            stmts.append(stmt)
+            param.update(vals[1])
+            stmts.append(vals[0])
 
         if stmts:
             stmt = ' AND '.join(stmts)
@@ -333,6 +360,7 @@ class Store(BaseStore):
         """
 
         with self.conn.cursor() as curs:
+            print 'XXX QUERY', query
             try:
                 curs.execute(query, param)
             except BaseException as exc:
@@ -368,6 +396,8 @@ class Store(BaseStore):
         )
 
         filters = kwargs.get('filters')
+        filters += getattr(model, 'default_filters', [])
+
         if filters:
             where, param = self.filters_query(filters)
             query += where
