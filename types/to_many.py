@@ -69,7 +69,7 @@ class Type(BaseType):
         self.field = field
         self.rtype = rtype
 
-        kwargs = kwargs.update({
+        kwargs.update({
             'deserialize_from': deserialize_from,
             'from_rest': from_rest,
         })
