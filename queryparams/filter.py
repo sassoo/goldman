@@ -88,48 +88,37 @@ class Filter(object):
 class FilterOr(object):
     """ OR'd filter expression
 
-    The filter expressions will be immediately cast into
-    Filter objects if not one already.
-
     This object will represent the collection of Filter
     objects that should be evaluated as a collection using
     the logical `OR` operator.
     """
 
-    def __init__(self, exprs):
+    def __init__(self, filters):
 
-        self.exprs = []
-
-        for expr in exprs:
-            if not isinstance(expr, Filter):
-                expr = Filter(*expr)
-
-            self.exprs.append(expr)
+        self.filters = filters
 
     def __contains__(self, item):
         """ Leverage the single Filter for comparison logic """
 
-        return item in self.exprs
+        return item in self.filters
 
     def __getitem__(self, index):
 
-        return self.exprs[index]
+        return self.filters[index]
 
     def __len__(self):
 
-        return len(self.exprs)
+        return len(self.filters)
 
     def __repr__(self):
-        """ Display the original sort with descending character """
 
         name = self.__class__.__name__
 
-        return '{}({})'.format(name, self.exprs)
+        return '{}({})'.format(name, self.filters)
 
     def __str__(self):
-        """ Display the original sort with descending character """
 
-        return str(self.exprs)
+        return str(self.filters)
 
 
 class FilterRel(Filter):
