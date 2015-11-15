@@ -8,10 +8,60 @@
     methods against single items.
 """
 
-import goldman
 import falcon
+import goldman
+import goldman.signals as signals
 
 from ..resources.base import Resource as BaseResource
+from goldman.utils.responder_helpers import *
+
+
+def on_delete(resc, req, resp, rid):  # pylint: disable=unused-argument
+    """ Delete the single item
+
+    Upon a successful deletion an empty bodied 204
+    is returned.
+    """
+
+    signals.on_any.send(resc.model)
+    signals.on_delete.send(resc.model)
+
+    model = find(resc.model, rid)
+    goldman.sess.store.delete(model)
+
+    resp.status = falcon.HTTP_204
+
+
+def on_get(resc, req, resp, rid):
+    """ Find the model by id & serialize it back """
+
+    signals.on_any.send(resc.model)
+    signals.on_get.send(resc.model)
+
+    model = find(resc.model, rid)
+    props = to_rest(model, includes=req.includes)
+
+    resp.last_modified = model.updated
+
+    resp.serialize(props)
+
+
+def on_patch(resc, req, resp, rid):
+    """ Deserialize the payload & update the single item """
+
+    signals.on_any.send(resc.model)
+    signals.on_patch.send(resc.model)
+
+    props = req.deserialize()
+    model = find(resc.model, rid)
+
+    from_rest(model, props)
+    goldman.sess.store.update(model)
+
+    props = to_rest(model, includes=req.includes)
+    resp.last_modified = model.updated
+
+    resp.serialize(props)
 
 
 class Resource(BaseResource):
@@ -26,51 +76,10 @@ class Resource(BaseResource):
         goldman.JSONAPISerializer,
     ]
 
-    def __init__(self, model):
+    def __init__(self, model, disable=None):
 
         self.model = model
+        self.rondrs = [on_delete, on_get, on_patch]
         self.rtype = model.RTYPE
 
-        super(Resource, self).__init__()
-
-    def on_delete(self, req, resp, rid):
-        """ Delete the single item
-
-        Upon a successful deletion an empty bodied 204
-        is returned.
-        """
-
-        rondr = goldman.ModelResponder(self, req, resp, rid=rid)
-        model = rondr.find(self.rtype, rid)
-
-        goldman.sess.store.delete(model)
-
-        resp.status = falcon.HTTP_204
-
-    def on_get(self, req, resp, rid):
-        """ Find the model by id & serialize it back """
-
-        rondr = goldman.ModelResponder(self, req, resp, rid=rid)
-        model = rondr.find(self.rtype, rid)
-        props = rondr.to_rest(model, includes=req.includes)
-
-        resp.last_modified = model.updated
-        resp.location = req.path
-
-        resp.serialize(props)
-
-    def on_patch(self, req, resp, rid):
-        """ Deserialize the payload & update the single item """
-
-        rondr = goldman.ModelResponder(self, req, resp, rid=rid)
-        props = req.deserialize()
-        model = rondr.find(self.rtype, rid)
-
-        rondr.from_rest(model, props)
-        goldman.sess.store.update(model)
-
-        props = rondr.to_rest(model, includes=req.includes)
-        resp.last_modified = model.updated
-        resp.location = req.path
-
-        resp.serialize(props)
+        super(Resource, self).__init__(disable)

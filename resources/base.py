@@ -9,6 +9,8 @@
     for all resources.
 """
 
+import types
+
 
 class Resource(object):
     """ Base resource class """
@@ -16,10 +18,20 @@ class Resource(object):
     DESERIALIZERS = []
     SERIALIZERS = []
 
-    def __init__(self):
+    def __init__(self, disable=None):
+
+        disable = disable or []
+        rondrs = getattr(self, 'rondrs', [])
 
         if not self.DESERIALIZERS:
             raise NotImplementedError('resource DESERIALIZERS required')
 
         elif not self.SERIALIZERS:
             raise NotImplementedError('resource SERIALIZERS required')
+
+        for rondr in rondrs:
+            func = types.MethodType(rondr, self)
+            name = rondr.func_name
+
+            if name not in disable:
+                setattr(self, name, func)

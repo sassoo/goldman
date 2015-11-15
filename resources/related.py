@@ -10,9 +10,11 @@
 
 import goldman
 import goldman.exceptions as exceptions
+import goldman.signals as signals
 
 from ..resources.base import Resource as BaseResource
 from goldman.utils.error_handlers import abort
+from goldman.utils.responder_helpers import find, to_rest
 
 
 class Resource(BaseResource):
@@ -41,6 +43,9 @@ class Resource(BaseResource):
         exist then abort on a 404.
         """
 
+        signals.on_any.send(self.model)
+        signals.on_get.send(self.model)
+
         if not hasattr(self.model, related):
             abort(exceptions.InvalidURL(**{
                 'detail': 'The {} resource does not have a related '
@@ -48,17 +53,14 @@ class Resource(BaseResource):
                           'your spelling & retry.'.format(self.rtype, related)
             }))
 
-        rondr = goldman.ModelResponder(self, req, resp)
-        model = rondr.find(self.rtype, rid)
+        model = find(self.model, rid)
         model = getattr(model, related).load()
 
         if isinstance(model, list):
-            props = [rondr.to_rest(m, includes=req.includes) for m in model]
+            props = [to_rest(m, includes=req.includes) for m in model]
         elif model:
-            props = rondr.to_rest(model, includes=req.includes)
+            props = to_rest(model, includes=req.includes)
         else:
             props = model
-
-        resp.location = req.path
 
         resp.serialize(props)
