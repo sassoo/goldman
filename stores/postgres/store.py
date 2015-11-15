@@ -225,6 +225,7 @@ class Store(BaseStore):
             param.update(vals[1])
             stmts.append(vals[0])
 
+        print 'XXX STMTS', stmts
         if stmts:
             stmt = ' AND '.join(stmts)
             stmt = ' WHERE ' + stmt
@@ -372,12 +373,25 @@ class Store(BaseStore):
                 print msg
                 handle_exc(exc)
 
-            results = curs.fetchall()
+            result = curs.fetchall()
 
-        return results
+        return result
 
     def search(self, rtype, **kwargs):
-        """ Search for the model by assorted criteria """
+        """ Search for the model by assorted criteria
+
+        Quite a bit needs to happen for a search processing!
+
+        The breakdown is we need to apply the query parameters
+        where applicable. These include pagination, sorting,
+        & filtering.
+
+        Additionally, models can declare there own static
+        filters or static query that should be applied. For
+        static filters a model can opt-in with a `search_filters`
+        property & for a static query to append a `search_query`
+        property must be present.
+        """
 
         model = rtype_to_model(rtype)
         param = {}
@@ -396,26 +410,33 @@ class Store(BaseStore):
         )
 
         filters = kwargs.get('filters')
-        filters += getattr(model, 'default_filters', [])
+        filters += getattr(model, 'search_filters', []) or []
 
         if filters:
             where, param = self.filters_query(filters)
             query += where
 
+        model_query = getattr(model, 'search_query', '') or ''
+        if filters and model_query:
+            model_query = ' AND ' + model_query
+        elif model_query:
+            model_query = ' WHERE ' + model_query
+
+        query += model_query
         query += sorts
         query += pages
 
         signals.pre_search.send(model.__class__, model=model)
 
-        results = self.query(query, param=param)
-        models = [model(result) for result in results]
+        result = self.query(query, param=param)
+        models = [model(res) for res in result]
 
         if models:
-            signals.post_search.send(model.__class__, models=results)
+            signals.post_search.send(model.__class__, models=result)
 
         pages = kwargs.get('pages')
-        if pages and results:
-            pages.total = results[0]['_count']
+        if pages and result:
+            pages.total = result[0]['_count']
 
         return models
 
