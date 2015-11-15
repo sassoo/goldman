@@ -16,7 +16,6 @@ from goldman.middleware import *
 from goldman.deserializers import *
 from goldman.serializers import *
 from goldman.resources import *
-from goldman.responders import *
 
 
 from goldman.config import Config
