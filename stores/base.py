@@ -21,30 +21,28 @@ class Cache(object):
 
         self._cache = {}
 
-    def get(self, key):
+    def get(self, key, bucket):
         """ Get a cached item by key
 
         If the cached item isn't found the return None.
         """
 
         try:
-            return self._cache[key]
+            return self._cache[bucket][key]
         except (KeyError, TypeError):
             return None
 
-    def set(self, key, val):
+    def set(self, key, val, bucket):
         """ Set a cached item by key
 
         WARN: Regardless if the item is already in the cache,
               it will be udpated with the new value.
         """
 
-        self._cache[key] = val
+        if bucket not in self._cache:
+            self._cache[bucket] = {}
 
-    def unload(self):
-        """ Purge the entire cache """
-
-        self._cache = {}
+        self._cache[bucket][key] = val
 
 
 class Store(object):

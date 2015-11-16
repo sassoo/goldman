@@ -24,17 +24,23 @@ def abort(error):
     raise JSONAPIErrorSerializer(error)
 
 
-def access_fail(msg):
+def access_fail(msg=None):
     """ Simple wrapper around aborting with AccessDenied """
 
-    abort(exceptions.AccessDenied(**{
-        'detail': msg
-    }))
+    if msg:
+        abort(exceptions.AccessDenied(**{
+            'detail': msg,
+        }))
+    else:
+        abort(exceptions.AccessDenied)
 
 
-def mod_fail(msg):
+def mod_fail(msg=None):
     """ Simple wrapper around aborting with ModificationDenied """
 
-    abort(exceptions.ModificationDenied(**{
-        'detail': msg
-    }))
+    if msg:
+        abort(exceptions.ModificationDenied(**{
+            'detail': msg,
+        }))
+    else:
+        abort(exceptions.ModificationDenied)
