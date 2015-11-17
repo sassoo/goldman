@@ -25,6 +25,9 @@ class Type(BaseType):
         or long name can be trivially accessed. Additionally,
         some geo type ops are available.
 
+        TIP: The us.states library expects unicode so we
+             must ensure value is encoded properly.
+
         :return: us.states.State
         """
 
@@ -32,7 +35,7 @@ class Type(BaseType):
             return value
 
         try:
-            state = us.states.lookup(value)
+            state = us.states.lookup(unicode(value))
 
             if not state:
                 raise TypeError
