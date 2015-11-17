@@ -220,7 +220,7 @@ class Parser(object):
         if rid and req.is_posting:
             abort(exceptions.ModificationDenied(**{
                 'detail': 'We do not support client-generated ID\'s',
-                'links': 'jsonapi.org/format/#crud-creating-client-ids'
+                'links': 'jsonapi.org/format/#crud-creating-client-ids',
             }))
 
     @staticmethod

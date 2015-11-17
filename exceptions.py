@@ -268,6 +268,7 @@ class ModificationDenied(APIException):
         super(ModificationDenied, self).__init__(**{
             'code': 'modification_denied',
             'detail': kwargs.get('detail', self.DETAIL),
+            'links': kwargs.get('links'),
             'status': falcon.HTTP_403,
             'title': 'Access denied in modification attempt',
         })
