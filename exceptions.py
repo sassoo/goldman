@@ -401,6 +401,21 @@ class SerializerNotAllowed(APIException):
 """
 
 
+class ResourceConflict(APIException):
+    """ Generic resource conflict """
+
+    DETAIL = 'Your request had a generic resource conflict.'
+
+    def __init__(self, **kwargs):
+
+        super(ResourceConflict, self).__init__(**{
+            'code': 'resource_conflict',
+            'detail': kwargs.get('detail', self.DETAIL),
+            'status': falcon.HTTP_409,
+            'title': 'Generic resource conflict',
+        })
+
+
 class ResourceTypeNotAllowed(APIException):
     """ The resource type is not allowed for the URL requested """
 
