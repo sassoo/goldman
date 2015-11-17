@@ -225,7 +225,6 @@ class Store(BaseStore):
             param.update(vals[1])
             stmts.append(vals[0])
 
-        print 'XXX STMTS', stmts
         if stmts:
             stmt = ' AND '.join(stmts)
             stmt = ' WHERE ' + stmt
