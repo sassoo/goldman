@@ -36,6 +36,25 @@ class Model(_SchematicsModel):
         except BaseException:
             self._original = {}
 
+    def __setattr__(self, name, value):
+        """ Help auto-cast certain types since schematics doesn't
+
+        We may want to auto-cast more field types on assignment
+        but for now ToOneType's will properly auto-cast a
+        model assignment.
+
+        This supports assignment of a model directly to a
+        ToOneType field where the `rid_value` property of the
+        model will be extracted just as the `to_native` method
+        of the ToOneType expects.
+        """
+
+        if name in self.to_one and hasattr(value, 'rid_value'):
+            to_one = getattr(self, '_fields')[name]
+            value = to_one.to_native(value.rid_value)
+
+        super(Model, self).__setattr__(name, value)
+
     @classproperty
     def all_fields(cls):  # NOQA
         """ Return a list of all the fields """
