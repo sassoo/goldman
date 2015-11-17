@@ -408,7 +408,7 @@ class Store(BaseStore):
             table=rtype,
         )
 
-        filters = kwargs.get('filters')
+        filters = kwargs.get('filters', [])
         filters += getattr(model, 'search_filters', []) or []
 
         if filters:
