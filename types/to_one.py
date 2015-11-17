@@ -16,7 +16,13 @@ from schematics.types import BaseType
 
 
 class ToOne(object):
-    """ ToOne object """
+    """ ToOne object
+
+    Evaluating whether or not to load the model from the
+    store uses the is_loaded property rather than simply
+    checking the model attribute. This is to needed when
+    a load has been done but no model exists.
+    """
 
     def __init__(self, rtype, field, rid=None):
 
@@ -56,7 +62,7 @@ class ToOne(object):
     def load(self):
         """ Return the model from the store """
 
-        if self.rid and not self._is_loaded:
+        if self.rid and not self.is_loaded:
             store = goldman.sess.store
             self._is_loaded = True
 

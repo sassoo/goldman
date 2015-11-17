@@ -1,11 +1,11 @@
 """
-    resources.item
-    ~~~~~~~~~~~~~~
+    resources.model
+    ~~~~~~~~~~~~~~~
 
-    Single item resource object with responders.
+    Single model resource object with responders.
 
     This can be used directly or sub-classed for handling common
-    methods against single items.
+    methods against single models.
 """
 
 import falcon

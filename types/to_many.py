@@ -14,7 +14,13 @@ from schematics.types import BaseType
 
 
 class ToMany(object):
-    """ ToMany object """
+    """ ToMany object
+
+    Evaluating whether or not to load the models from the
+    store uses the is_loaded property rather than simply
+    checking the models attribute. This is to needed when
+    a load has been done but no models exist.
+    """
 
     def __init__(self, rtype, field, rid):
 

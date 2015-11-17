@@ -1,8 +1,8 @@
 """
-    resources.collection
-    ~~~~~~~~~~~~~~~~~~~~
+    resources.models
+    ~~~~~~~~~~~~~~~~
 
-    Multiple items resource object with responders.
+    Multiple models resource object with responders.
 """
 
 import falcon
