@@ -46,7 +46,7 @@ def on_post(resc, req, resp):
     goldman.sess.store.create(model)
 
     resp.last_modified = model.updated
-    resp.location = req.path + '/' + model.rid_value
+    resp.location = '%s/%s' % (req.path, model.rid_value)
     resp.status = falcon.HTTP_201
 
     resp.serialize(to_rest(model))
