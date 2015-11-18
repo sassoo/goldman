@@ -105,12 +105,6 @@ class Model(_SchematicsModel):
 
         return cls.get_fields_by_class(ToOneType)
 
-    @classproperty
-    def unique_fields(cls):  # NOQA
-        """ Return a list of all the fields with unique constraints """
-
-        return cls.get_fields_by_prop('unique', True)
-
     @classmethod
     def get_fields_by_class(cls, field_class):
         """ Return a list of field names matching a field class

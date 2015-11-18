@@ -12,7 +12,7 @@ from goldman.serializers.jsonapi_error import Serializer as \
     JSONAPIErrorSerializer
 
 
-__all__ = ['abort', 'mod_fail']
+__all__ = ['abort', 'access_fail', 'mod_fail']
 
 
 def abort(error):
