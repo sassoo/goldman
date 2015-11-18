@@ -139,6 +139,25 @@ class Model(_SchematicsModel):
         return ret
 
     @classmethod
+    def get_fields_with_prop(cls, prop_key):
+        """ Return a list of fields with a prop key
+
+        Each list item will be a tuple of field name &
+        field value.
+
+        :param prop_key: key name
+        :return: list of tuples
+        """
+
+        ret = []
+
+        for key, val in getattr(cls, '_fields').items():
+            if hasattr(val, prop_key):
+                ret.append((key, getattr(val, prop_key)))
+
+        return ret
+
+    @classmethod
     def to_exceptions(cls, errors):
         """ Convert the validation errors into our exceptions
 

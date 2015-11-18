@@ -70,10 +70,10 @@ def _from_rest_hide(model, props):
 def _from_rest_ignore(model, props):
     """ Purge fields that are completely unknown """
 
-    model_fields = model.all_fields
+    fields = model.all_fields
 
     for prop in props.keys():
-        if prop not in model_fields:
+        if prop not in fields:
             del props[prop]
 
 
@@ -85,6 +85,30 @@ def _from_rest_lower(model, props):
             props[field] = props[field].lower()
         except (AttributeError, KeyError):
             continue
+
+
+def _from_rest_on_create(model, props):
+    """ Assign the default values when creating a model
+
+    This is done on fields with `on_create=<value>`.
+    """
+
+    fields = model.get_fields_with_prop('on_create')
+
+    for field in fields:
+        props[field[0]] = field[1]
+
+
+def _from_rest_on_update(model, props):
+    """ Assign the default values when updating a model
+
+    This is done on fields with `on_update=<value>`.
+    """
+
+    fields = model.get_fields_with_prop('on_update')
+
+    for field in fields:
+        props[field[0]] = field[1]
 
 
 def from_rest(model, props):
@@ -101,9 +125,16 @@ def from_rest(model, props):
             * coerce all the values
     """
 
+    req = goldman.sess.req
+
     _from_rest_hide(model, props)
     _from_rest_ignore(model, props)
     _from_rest_lower(model, props)
+
+    if req.is_posting:
+        _from_rest_on_create(model, props)
+    elif req.is_patching:
+        _from_rest_on_update(model, props)
 
     model.merge(props, validate=True)
 
