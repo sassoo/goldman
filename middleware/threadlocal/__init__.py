@@ -23,12 +23,3 @@ class Middleware(object):
 
         if goldman.config.STORE:
             goldman.sess.store = goldman.config.STORE()
-
-    def process_resource(self, req, resp, resource):
-        """ Process the request after routing.
-
-        The logged in identity should be known by the time
-        the resource is found.
-        """
-
-        goldman.sess.login = req.login

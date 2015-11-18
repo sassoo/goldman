@@ -190,7 +190,7 @@ class Serializer(BaseSerializer):
             }
         }
 
-        if val['rid']:
+        if val and val['rid']:
             rel[key]['data'] = {'id': val['rid'], 'type': val['rtype']}
 
         return rel
