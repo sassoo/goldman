@@ -23,20 +23,23 @@ def on_delete(resc, req, resp, rid):  # pylint: disable=unused-argument
     is returned.
     """
 
-    signals.on_any.send(resc.model)
-    signals.on_delete.send(resc.model)
+    signals.responder_pre_any.send(resc.model)
+    signals.responder_pre_delete.send(resc.model)
 
     model = find(resc.model, rid)
     goldman.sess.store.delete(model)
 
     resp.status = falcon.HTTP_204
 
+    signals.responder_post_any.send(resc.model)
+    signals.responder_post_delete.send(resc.model)
+
 
 def on_get(resc, req, resp, rid):
     """ Find the model by id & serialize it back """
 
-    signals.on_any.send(resc.model)
-    signals.on_get.send(resc.model)
+    signals.responder_pre_any.send(resc.model)
+    signals.responder_pre_find.send(resc.model)
 
     model = find(resc.model, rid)
     props = to_rest(model, includes=req.includes)
@@ -45,12 +48,15 @@ def on_get(resc, req, resp, rid):
 
     resp.serialize(props)
 
+    signals.responder_post_any.send(resc.model)
+    signals.responder_post_find.send(resc.model)
+
 
 def on_patch(resc, req, resp, rid):
     """ Deserialize the payload & update the single item """
 
-    signals.on_any.send(resc.model)
-    signals.on_patch.send(resc.model)
+    signals.responder_pre_any.send(resc.model)
+    signals.responder_pre_update.send(resc.model)
 
     props = req.deserialize()
     model = find(resc.model, rid)
@@ -62,6 +68,9 @@ def on_patch(resc, req, resp, rid):
     resp.last_modified = model.updated
 
     resp.serialize(props)
+
+    signals.responder_post_any.send(resc.model)
+    signals.responder_post_update.send(resc.model)
 
 
 class Resource(BaseResource):

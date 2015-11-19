@@ -19,8 +19,8 @@ def on_get(resc, req, resp):
     We return an empty list if no models are found.
     """
 
-    signals.on_any.send(resc.model)
-    signals.on_get.send(resc.model)
+    signals.responder_pre_any.send(resc.model)
+    signals.responder_pre_search.send(resc.model)
 
     model = goldman.sess.store.search(resc.rtype, **{
         'filters': req.filters,
@@ -32,12 +32,15 @@ def on_get(resc, req, resp):
 
     resp.serialize(props)
 
+    signals.responder_post_any.send(resc.model)
+    signals.responder_post_search.send(resc.model)
+
 
 def on_post(resc, req, resp):
     """ Deserialize the payload & create the new single item """
 
-    signals.on_any.send(resc.model)
-    signals.on_post.send(resc.model)
+    signals.responder_pre_any.send(resc.model)
+    signals.responder_pre_create.send(resc.model)
 
     props = req.deserialize()
     model = resc.model()
@@ -50,6 +53,9 @@ def on_post(resc, req, resp):
     resp.status = falcon.HTTP_201
 
     resp.serialize(to_rest(model))
+
+    signals.responder_post_any.send(resc.model)
+    signals.responder_post_create.send(resc.model)
 
 
 class Resource(BaseResource):

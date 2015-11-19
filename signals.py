@@ -14,11 +14,23 @@ These should be called first thing by the responders.
 """
 
 # pylint: disable=invalid-name
-on_any = blinker.signal('on_any')
-on_delete = blinker.signal('on_delete')
-on_get = blinker.signal('on_get')
-on_patch = blinker.signal('on_patch')
-on_post = blinker.signal('on_post')
+responder_pre_any = blinker.signal('responder_pre_any')
+responder_post_any = blinker.signal('responder_post_any')
+
+responder_pre_create = blinker.signal('responder_pre_create')
+responder_post_create = blinker.signal('responder_post_create')
+
+responder_pre_delete = blinker.signal('responder_pre_delete')
+responder_post_delete = blinker.signal('responder_post_delete')
+
+responder_pre_find = blinker.signal('responder_pre_find')
+responder_post_find = blinker.signal('responder_post_find')
+
+responder_pre_search = blinker.signal('responder_pre_search')
+responder_post_search = blinker.signal('responder_post_search')
+
+responder_pre_update = blinker.signal('responder_pre_update')
+responder_post_update = blinker.signal('responder_post_update')
 
 
 """
