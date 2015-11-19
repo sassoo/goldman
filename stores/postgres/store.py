@@ -200,15 +200,15 @@ class Store(BaseStore):
             """ Given a FilterRel object return a SQL sub query """
 
             stmt = """
-                   {local_field} = (SELECT {foreign_field} FROM {foreign_rtype}
-                                    WHERE {foreign_filter} {oper} %({prop})s)
+                   {field} IN (SELECT {foreign_field} FROM {foreign_rtype}
+                               WHERE {foreign_filter} {oper} %({prop})s)
                    """
 
             return stmt.format(
+                field=rel.local_field,
                 foreign_field=rel.foreign_field,
                 foreign_filter=rel.foreign_filter,
                 foreign_rtype=rel.foreign_rtype,
-                local_field=rel.local_field,
                 oper=oper,
                 prop=prop,
             )
@@ -346,7 +346,7 @@ class Store(BaseStore):
             result = model(result[0])
             signals.post_find.send(model.__class__, model=result)
 
-        return result
+        return result or None
 
     def query(self, query, param=None):
         """ Perform a SQL based query

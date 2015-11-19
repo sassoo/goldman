@@ -72,6 +72,7 @@ class Type(BaseType):
     def __init__(self, deserialize_from='rid', from_rest=False, field=None,
                  rtype=None, **kwargs):
 
+        self.local_field = deserialize_from
         self.field = field
         self.rtype = rtype
 

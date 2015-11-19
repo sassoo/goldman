@@ -142,14 +142,15 @@ class FilterRel(Filter):
     same named properties on our goldman relationship types.
     """
 
-    def __init__(self, foreign_field, foreign_rtype, *args, **kwargs):
+    def __init__(self, foreign_field, foreign_filter, foreign_rtype,
+                 local_field, *args, **kwargs):
 
         super(FilterRel, self).__init__(*args, **kwargs)
 
-        self.local_field, self.foreign_filter = self.field.split('.')
-
+        self.foreign_filter = foreign_filter
         self.foreign_field = foreign_field
         self.foreign_rtype = foreign_rtype
+        self.local_field = local_field
 
 
 def _parse_param(key):
@@ -309,8 +310,12 @@ def init(req, model):
             foreign_field = field_type.field
             foreign_rtype = field_type.rtype
 
-            param = FilterRel(foreign_field, foreign_rtype,
-                              field, oper, val)
+            local_field, foreign_filter = field.split('.')
+            if hasattr(field_type, 'local_field'):
+                local_field = field_type.local_field
+
+            param = FilterRel(foreign_field, foreign_filter, foreign_rtype,
+                              local_field, field, oper, val)
         else:
             param = Filter(field, oper, val)
 
