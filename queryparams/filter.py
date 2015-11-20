@@ -255,8 +255,11 @@ def _validate_params(params, model):  # pylint: disable=too-many-branches
                          'of floats for geo evaluation. Please ' \
                          'modify your request & retry'.format(param)
 
-        elif param.oper in goldman.config.LIST_FILTERS:
-            param.val = list(param.val)
+        elif param.oper in goldman.config.ENUM_FILTERS:
+            if not isinstance(param.val, list):
+                param.val = [param.val]
+
+            param.val = tuple(param.val)
 
         elif isinstance(param.val, list):
             detail = 'The query filter {} should not be specified more ' \

@@ -37,6 +37,9 @@ FILTER_TABLE = {
     'gte': '>=',
     'lte': '<=',
 
+    'in': 'IN',
+    'nin': 'NOT IN',
+
     'after': '>',
     'before': '<',
 }

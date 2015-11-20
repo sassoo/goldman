@@ -27,14 +27,14 @@ class Config(object):
     # Query filter operators
     BOOL_FILTERS = ('exists',)
     DATE_FILTERS = ('after', 'before')
+    ENUM_FILTERS = ('in', 'len', 'nin')
     EQUAL_FILTERS = ('eq', 'neq')
-    GEO_FILTERS = ('geo_near', 'geo_within')
-    LIST_FILTERS = ('in', 'len', 'nin')
+    GEO_FILTERS = ('near', 'within')
     NUM_FILTERS = ('gt', 'gte', 'lt', 'lte')
     STR_FILTERS = ('contains',)
 
-    QUERY_FILTERS = BOOL_FILTERS + DATE_FILTERS + EQUAL_FILTERS + \
-        GEO_FILTERS + LIST_FILTERS + NUM_FILTERS + STR_FILTERS
+    QUERY_FILTERS = BOOL_FILTERS + DATE_FILTERS + ENUM_FILTERS + \
+        EQUAL_FILTERS + GEO_FILTERS + NUM_FILTERS + STR_FILTERS
 
     # Query pagination
     PAGE_LIMIT = 10
