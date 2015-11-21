@@ -37,6 +37,11 @@ FILTER_TABLE = {
     'gte': '>=',
     'lte': '<=',
 
+    'contains': 'LIKE',
+    'icontains': 'ILIKE',
+    'endswith': 'LIKE',
+    'startswith': 'LIKE',
+
     'in': 'IN',
     'nin': 'NOT IN',
 
@@ -162,6 +167,25 @@ class Store(BaseStore):
         :return: tuple (string, dict)
         """
 
+        def _cast_val(filtr):
+            """ Perform any needed casting on the filter value
+
+            This could be tasks like including '%' signs at
+            certain anchor points based on the filter or
+            even wrapping it in certain functions.
+            """
+
+            val = filtr.val
+
+            if filtr.oper in ('contains', 'icontains'):
+                val = '%' + filtr.val + '%'
+            elif filtr.oper == 'endswith':
+                val = '%' + filtr.val
+            elif filtr.oper == 'startswith':
+                val = filtr.val + '%'
+
+            return val
+
         def _filter(filtr):
             """ Process each individual Filter object """
 
@@ -180,7 +204,7 @@ class Store(BaseStore):
                     prop=prop,
                 )
 
-            return stmt, {prop: filtr.val}
+            return stmt, {prop: _cast_val(filtr)}
 
         def _filter_or(filters):
             """ Given a FilterOr object return a SQL query """
