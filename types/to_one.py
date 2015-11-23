@@ -42,6 +42,10 @@ class ToOne(object):
         except AttributeError:
             return False
 
+    def __ne__(self, other):
+
+        return not self == other
+
     def __repr__(self):
 
         name = self.__class__.__name__
@@ -89,6 +93,12 @@ class Type(BaseType):
 
         super(Type, self).__init__(**kwargs)
 
+    def _cast_rid(self, rid):
+        """ Ensure the incoming resource ID is cast properly """
+
+        if self.typeness is int:
+            return int(rid)
+
     def to_native(self, value, context=None):
         """ Schematics deserializer override
 
@@ -97,6 +107,8 @@ class Type(BaseType):
 
         if isinstance(value, ToOne):
             return value
+
+        value = self._cast_rid(value)
 
         return ToOne(self.rtype, self.field, rid=value)
 
