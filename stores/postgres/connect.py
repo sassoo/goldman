@@ -39,5 +39,6 @@ class Connect(object):
         )
 
         self._conn.set_session(autocommit=True)
+        psycopg2.extras.register_hstore(self._conn)
 
         return self._conn
