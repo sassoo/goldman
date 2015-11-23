@@ -45,6 +45,8 @@ FILTER_TABLE = {
     'in': 'IN',
     'nin': 'NOT IN',
 
+    'near': '<=',
+
     'after': '>',
     'before': '<',
 }

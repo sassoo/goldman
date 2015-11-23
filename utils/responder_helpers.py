@@ -15,7 +15,7 @@
 import goldman
 import goldman.exceptions as exceptions
 
-from goldman.utils.error_handlers import abort
+from goldman.utils.error_handlers import abort, mod_fail
 from schematics.types import IntType
 
 
@@ -111,6 +111,24 @@ def _from_rest_on_update(model, props):
         props[field[0]] = field[1]
 
 
+def _from_rest_reject_update(model):
+    """ Reject any field updates not allowed on POST
+
+    This is done on fields with `reject_update=True`.
+    """
+
+    dirty = model.dirty_fields
+    fields = model.get_fields_by_prop('reject_update', True)
+    reject = []
+
+    for field in fields:
+        if field in dirty:
+            reject.append(field)
+
+    if reject:
+        mod_fail('These fields cannot be updated: %s' % ', '.join(reject))
+
+
 def from_rest(model, props):
     """ Map the REST data onto the model
 
@@ -137,6 +155,9 @@ def from_rest(model, props):
         _from_rest_on_update(model, props)
 
     model.merge(props, validate=True)
+
+    if req.is_patching:
+        _from_rest_reject_update(model)
 
 
 def _to_rest_hide(model, props):
