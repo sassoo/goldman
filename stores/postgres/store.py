@@ -389,7 +389,7 @@ class Store(BaseStore):
         """
 
         with self.conn.cursor() as curs:
-            print 'XXX QUERY', query
+            print 'XXX QUERY', curs.mogrify(query, param)
             try:
                 curs.execute(query, param)
             except BaseException as exc:

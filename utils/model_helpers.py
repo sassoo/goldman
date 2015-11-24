@@ -25,4 +25,4 @@ def rtype_to_model(rtype):
         if rtype.lower() == model.RTYPE.lower():
             return model
 
-    raise ValueError
+    raise ValueError('%s resource type not registered' % rtype)
