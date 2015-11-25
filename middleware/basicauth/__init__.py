@@ -8,7 +8,7 @@
 
 import goldman.exceptions as exceptions
 
-from goldman.utils.error_handlers import abort
+from goldman.utils.error_helpers import abort
 from base64 import b64decode
 
 

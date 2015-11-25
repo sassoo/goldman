@@ -2,9 +2,9 @@
     deserializers.json_7159
     ~~~~~~~~~~~~~~~~~~~~~~~
 
-    Deserializer that is compliant with RFC 7159 (JSON spec). To avoid
-    name collisions with the python json module we name ours
-    json_7159.
+    Deserializer that is compliant with RFC 7159 (JSON spec).
+    To avoid name collisions with the python json module we
+    name ours json_7159.
 """
 
 import goldman
@@ -12,7 +12,7 @@ import goldman.exceptions as exceptions
 import json
 
 from ..deserializers.base import Deserializer as BaseDeserializer
-from goldman.utils.error_handlers import abort
+from goldman.utils.error_helpers import abort
 
 
 class Deserializer(BaseDeserializer):
@@ -20,11 +20,21 @@ class Deserializer(BaseDeserializer):
 
     MIMETYPE = goldman.JSON_MIMETYPE
 
-    def deserialize(self, data=None):
+    def deserialize(self):
         """ Invoke the deserializer
 
-        :param data: single object to be deserialized
         :return: dict
+        """
+
+        super(Deserializer, self).deserialize()
+
+        return self.parse()
+
+    def parse(self):
+        """ Invoke the RFC 7159 spec compliant parser
+
+        :return:
+            the parsed & vetted request body
         """
 
         try:

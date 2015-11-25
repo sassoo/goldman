@@ -15,7 +15,7 @@
 import goldman
 import goldman.exceptions as exceptions
 
-from goldman.utils.error_handlers import abort, mod_fail
+from goldman.utils.error_helpers import abort, mod_fail
 from schematics.types import IntType
 
 

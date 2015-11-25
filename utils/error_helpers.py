@@ -1,6 +1,6 @@
 """
-    utils.error_handlers
-    ~~~~~~~~~~~~~~~~~~~~
+    utils.error_helpers
+    ~~~~~~~~~~~~~~~~~~~
 
     Convenient interfaces for aborting on error similar
     to abort() in the Flask micro-web framework.

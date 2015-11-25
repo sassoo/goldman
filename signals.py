@@ -34,6 +34,15 @@ responder_post_update = blinker.signal('responder_post_update')
 
 
 """
+Sames as above but used by our file upload resource
+responders.
+"""
+
+responder_pre_upload = blinker.signal('responder_pre_upload')
+responder_post_upload = blinker.signal('responder_post_upload')
+
+
+"""
 Signals for our base goldman models invoked by the store
 during there requisite operations
 """

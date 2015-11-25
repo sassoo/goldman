@@ -14,7 +14,7 @@
 import goldman.exceptions as exceptions
 import re
 
-from goldman.utils.error_handlers import abort
+from goldman.utils.error_helpers import abort
 from goldman.utils.model_helpers import rtype_to_model
 
 

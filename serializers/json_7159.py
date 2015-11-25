@@ -21,4 +21,6 @@ class Serializer(BaseSerializer):
     def serialize(self, data):
         """ Call json.dumps & let it rip """
 
-        self.resp.body = json.dumps(data)
+        super(Serializer, self).serialize(data)
+
+        self.resp.body = json.dumps(data, indent=4)

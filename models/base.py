@@ -15,7 +15,7 @@ import goldman.exceptions as exceptions
 
 from goldman.types import ResourceType, ToManyType, ToOneType
 from goldman.utils.decorators import classproperty
-from goldman.utils.error_handlers import abort
+from goldman.utils.error_helpers import abort
 from schematics.exceptions import ConversionError, ModelValidationError
 from schematics.models import Model as _SchematicsModel
 from schematics.types import EmailType

@@ -10,7 +10,7 @@ import app.exceptions as exceptions
 import app.ext.Py2neo as neo
 import app.params as params
 
-from app.utils.error_handlers import abort
+from app.utils.error_helpers import abort
 
 
 FILTER_TABLE = {

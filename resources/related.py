@@ -13,7 +13,7 @@ import goldman.exceptions as exceptions
 import goldman.signals as signals
 
 from ..resources.base import Resource as BaseResource
-from goldman.utils.error_handlers import abort
+from goldman.utils.error_helpers import abort
 from goldman.utils.responder_helpers import find, to_rest
 
 

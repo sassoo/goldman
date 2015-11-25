@@ -18,7 +18,7 @@
 import goldman.exceptions as exceptions
 import falcon
 
-from goldman.utils.error_handlers import abort
+from goldman.utils.error_helpers import abort
 
 
 class Middleware(object):

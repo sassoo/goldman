@@ -13,6 +13,8 @@ from ..resources.json_7159 import Resource as JSONResource
 from ..resources.model import Resource as ModelResource
 from ..resources.models import Resource as ModelsResource
 from ..resources.related import Resource as RelatedResource
+from ..resources.s3_model import Resource as S3ModelResource
+from ..resources.s3_model_image import Resource as S3ModelImageResource
 
 
 RESOURCES = [
@@ -21,4 +23,6 @@ RESOURCES = [
     ModelResource,
     ModelsResource,
     RelatedResource,
+    S3ModelResource,
+    S3ModelImageResource,
 ]
