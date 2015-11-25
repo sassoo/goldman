@@ -49,18 +49,14 @@ class Middleware(object):
         if req.content_type_required and resource:
             if not req.content_type:
                 abort(exceptions.ContentTypeRequired)
-
             elif req.content_length in (None, 0):
                 abort(exceptions.EmptyRequestBody)
-
             else:
                 deserializer = _get_deserializer(req.content_type)
 
             if not deserializer:
                 abort(exceptions.RequestUnsupported)
-
             elif deserializer not in resource.DESERIALIZERS:
                 abort(exceptions.DeserializerNotAllowed)
-
             else:
-                req.deserializer = deserializer(req)
+                req.deserializer = deserializer(req, resp)

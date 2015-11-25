@@ -50,9 +50,7 @@ class Middleware(object):
 
             if not serializer:
                 abort(exceptions.RequestNotAcceptable)
-
             elif serializer not in resource.SERIALIZERS:
                 abort(exceptions.SerializerNotAllowed)
-
             else:
                 resp.serializer = serializer(req, resp)
