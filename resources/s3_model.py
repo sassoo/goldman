@@ -12,6 +12,7 @@ import falcon
 import goldman
 import goldman.exceptions as exceptions
 import goldman.signals as signals
+import time
 
 from ..resources.base import Resource as BaseResource
 from goldman.utils.error_helpers import abort
@@ -22,6 +23,8 @@ from goldman.utils.s3_helpers import s3_upload
 class Resource(BaseResource):
     """ S3 resource & responders """
 
+    MIMETYPES = []
+
     DESERIALIZERS = [
         goldman.FormDataDeserializer,
     ]
@@ -30,16 +33,37 @@ class Resource(BaseResource):
         goldman.JSONSerializer,
     ]
 
-    def __init__(self, model, bucket=None, mimetypes=None):
+    def __init__(self, model, **kwargs):
 
         self.model = model
-        self.bucket = bucket or goldman.config.get('S3_BUCKET')
-        self.mimetypes = mimetypes or getattr(self, 'MIMETYPES', ())
+        self.mimetypes = kwargs.get('mimetypes', self.MIMETYPES)
 
-        if not bucket:
+        # s3 properties
+        self.bucket = kwargs.get('bucket', goldman.config.S3_BUCKET)
+        self.key = kwargs.get('key', goldman.config.S3_KEY)
+        self.secret = kwargs.get('secret', goldman.config.S3_SECRET)
+
+        if not self.bucket:
             raise NotImplementedError('an S3 bucket is required')
 
         super(Resource, self).__init__()
+
+    @property
+    def s3_rtype(self):
+        """ Return the chunk after the last / in the URL
+
+        This will be used to generate the path in S3 & should be
+        something stable to group the related objects.
+        """
+
+        return goldman.sess.req.path.split('/')[-1]
+
+    def _gen_s3_path(self, model):
+
+        high_time = '%.5f' % time.time()
+
+        return '%s/%s/%s/%s.%s' % (model.rtype, model.rid_value, self.s3_rtype,
+                                   high_time, extension)
 
     def on_post(self, req, resp, rid):
         """ Deserialize the file upload & save it to S3
@@ -54,11 +78,12 @@ class Resource(BaseResource):
         signals.responder_pre_any.send(self.model)
         signals.responder_pre_upload.send(self.model, s3_rtype=s3_rtype)
 
-        props = req.deserialize(self.mimetypes)  # return content(-type)
+        props = req.deserialize(self.mimetypes)
         model = find(self.model, rid)
 
+        print props
         try:
-            s3_url = s3_upload(self.bucket, **props)
+            s3_url = s3_upload(self.bucket, self.key, self.secret, **props)
         except IOError:
             abort(exceptions.ServiceUnavailable(**{
                 'detail': 'The upload attempt failed unexpectedly',

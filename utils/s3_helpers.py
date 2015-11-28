@@ -8,29 +8,20 @@
     responders but any app could use these as well.
 """
 
+import goldman.extensions as extensions
 import time
 
-from base64 import b64decode
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
-from flask import abort, current_app as app, g, request
-from werkzeug import secure_filename
-
-ALLOWED_EXTENSIONS = ['gif', 'jpeg', 'jpg', 'png']
 
 
-def connect():
-    config = app.config['S3_SETTINGS']
+def connect(key, secret):
+    """ Create an S3 connection object using boto """
 
-    return S3Connection(config['key'], config['secret'])
+    return S3Connection(key, secret)
 
-def ext_to_content_type(ext):
-    if ext in ['jpeg', 'jpg']:
-        return 'image/jpeg'
-    else:
-        return 'image/%s' % ext
 
-def gen_url(key):
+def gen_url(bucket, key):
     """ Given a key generate the S3 url
 
     We do this to avoid a round-trip to the S3 API. This function may not
@@ -42,11 +33,12 @@ def gen_url(key):
     Returns:
         A string URL to the object
     """
-    bucket = app.config['S3_SETTINGS']['bucket']
 
     return '//s3.amazonaws.com/%s/%s' % (bucket, key)
 
-def s3_upload(bucket, content, content_type, acl='public-read', prefix=None):
+
+def s3_upload(bucket, key, secret, content, content_type, path,
+              acl='public-read'):
     """ Store an object in our an S3 bucket.
 
     Key is only the portion of the S3 key that can't be auto
@@ -76,19 +68,15 @@ def s3_upload(bucket, content, content_type, acl='public-read', prefix=None):
         S3 generated URL of the uploaded object
     """
 
-    conn = connect()
+    conn = connect(key, secret)
     bucket = conn.get_bucket(bucket)
 
     # obj is the object that will be uploaded to S3
     obj = Key(bucket)
     obj.content_type = content_type
 
-    # Create the name of the object in S3. It is prefixed with the company ID
-    # followed by '/' & the key name provided to this function. Lastly, the
-    # extension is appended & a high precision timestamp. We include slashes so
-    # it's easier to navigate in the S3 web console
-    obj.key = '%s/%s-%s.%s' % (str(g.login.company.id), key,
-                               '%.5f' % time.time(), extension)
+    # Create the name of the object in S3.
+    obj.key = '%s-%s.%s' % (key, '%.5f' % time.time(), extension)
 
     obj.set_contents_from_string(content)
     obj.set_acl(acl)

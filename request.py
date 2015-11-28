@@ -4,54 +4,40 @@
 
     Define our sub-classed Request object to be used instead of the
     native falcon Request object.
+
+    We extend the native Falcon request object in the following
+    notable ways:
+
+      1) break up the Content-Type itself & its params into
+         separate properties. We override the native content_type
+         property to NOT include the params.
+
+      2) proxy the deserialize method to the selected
+         deserializer
+
+      3) include a login property that can be whatever an
+         application chooses upon successful atuh
 """
 
 from falcon.request import Request as FalconRequest
 
 
 class Request(FalconRequest):
-    """ Subclass the default falcon request object """
+    """ Subclass the default falcon request object
+
+    First set content_type_params before reassigning content_type
+    sans params.
+    """
 
     def __init__(self, *args, **kwargs):
 
         super(Request, self).__init__(*args, **kwargs)
 
+        self.content_type_params = self._init_content_type_params()
+        self.content_type = self._init_content_type()
+
         self.deserializer = None
         self.login = None
-
-    @property
-    def content_type_params(self):
-        """ Return the Content-Type request header parameters
-
-        Convert all of the colon separated parameters into
-        a dict of key/vals. If some stupid reason duplicate
-        & conflicting params are present then the last one
-        wins.
-
-        If a particular content-type param is non-compliant
-        by not being a simple key=val pair then it is skipped.
-
-        If no content-type header or params are present then
-        return None.
-
-        :return: dict or None
-        """
-
-        ret = {}
-
-        if self.content_type:
-            # pylint: disable=no-member
-            params = self.content_type.split(';')[1:]
-
-            for param in params:
-                try:
-                    key, val = param.split('=')
-                except (AttributeError, ValueError):
-                    continue
-
-                ret[key] = val.strip('"')
-
-        return ret or None
 
     @property
     def content_type_required(self):
@@ -96,6 +82,49 @@ class Request(FalconRequest):
         """
 
         return self.deserializer.deserialize(*args, **kwargs)
+
+    def _init_content_type(self):
+        """ Return the Content-Type request header excluding params
+
+        Remove any excess whitespace & lower case it for more
+        predictable compares.
+        """
+
+        if self.content_type:
+            return self.content_type.split(';')[0].strip().lower()
+        else:
+            return None
+
+    def _init_content_type_params(self):
+        """ Return the Content-Type request header parameters
+
+        Convert all of the colon separated parameters into
+        a dict of key/vals. If some stupid reason duplicate
+        & conflicting params are present then the last one
+        wins.
+
+        If a particular content-type param is non-compliant
+        by not being a simple key=val pair then it is skipped.
+
+        If no content-type header or params are present then
+        return an empty dict.
+
+        :return: dict
+        """
+
+        ret = {}
+
+        if self.content_type:
+            params = self.content_type.split(';')[1:]
+            for param in params:
+                try:
+                    key, val = param.split('=')
+                except (AttributeError, ValueError):
+                    continue
+
+                ret[key.strip()] = val.strip('"').strip()
+
+        return ret
 
     def get_body(self):
         """ Read in the request stream & return it as is

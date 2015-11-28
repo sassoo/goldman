@@ -27,7 +27,7 @@ def _get_serializer(mimetype):
     """
 
     for serializer in goldman.SERIALIZERS:
-        if serializer.MIMETYPE.lower().startswith(mimetype.lower()):
+        if mimetype == serializer.MIMETYPE.lower():
             return serializer
 
     return None
@@ -44,9 +44,13 @@ class Middleware(object):
         """
 
         if resource:
-            mimetypes = [s.MIMETYPE for s in goldman.SERIALIZERS if s.MIMETYPE]
+            mimetypes = [s.MIMETYPE for s in resource.SERIALIZERS]
             preferred = req.client_prefers(mimetypes)
-            serializer = _get_serializer(preferred)
+
+            if not preferred:
+                abort(exceptions.RequestNotAcceptable)
+            else:
+                serializer = _get_serializer(preferred)
 
             if not serializer:
                 abort(exceptions.RequestNotAcceptable)

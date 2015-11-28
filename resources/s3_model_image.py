@@ -14,4 +14,4 @@ from ..resources.s3_model import Resource as S3ModelResource
 class Resource(S3ModelResource):
     """ S3 model image resource & responders """
 
-    MIMETYPES = ('image/jpeg', 'image/png')
+    MIMETYPES = ['image/jpeg', 'image/jpg', 'image/png']

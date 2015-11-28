@@ -12,7 +12,7 @@ import goldman.exceptions as exceptions
 import csv
 
 from goldman.utils.error_helpers import abort
-from ..deserializers.base import Deserializer as BaseDeserializer, fail
+from ..deserializers.base import Deserializer as BaseDeserializer
 
 
 class Normalizer(object):
