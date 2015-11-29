@@ -10,11 +10,17 @@
         1) A parser for spec compliant validations
         2) A normalizer for converting into a common
            format expected by our resources/responders.
+
+
+    WARN: Currently we only accept 1 upload at a time!
+          An error message will be sent if more than 1
+          upload is detected.
 """
 
 import cgi
 import goldman
 import goldman.exceptions as exceptions
+import goldman.extensions as extensions
 
 from ..deserializers.base import Deserializer as BaseDeserializer
 from goldman.utils.error_helpers import abort
@@ -32,10 +38,10 @@ class Deserializer(BaseDeserializer):
         containing the following key/vals:
 
             {
-                <unique name>: {
-                    'content': <uploaded object>,
-                    'content-type': <content-type of uploaded object>,
-                }
+                'content': <uploaded object>,
+                'content-type': <content-type of content>,
+                'file-ext': <file extension based on content-type>,
+                'file-name': <file name of content>,
             }
 
         The unique name is the required name provided for the part of
@@ -68,9 +74,11 @@ class Deserializer(BaseDeserializer):
 
         for part in parts:
             part = parts[part]
-            ret[part.name] = {
+            ret = {
                 'content': part.file.read(),
                 'content-type': part.type,
+                'file-ext': extensions.get(part.type),
+                'file-name': part.filename,
             }
 
         return ret
@@ -136,16 +144,20 @@ class Deserializer(BaseDeserializer):
 
         self._parse_top_level_content_type()
 
+        link = 'tools.ietf.org/html/rfc2388'
         parts = cgi.FieldStorage(
             fp=self.req.stream,
             environ=self.req.env
         )
 
         if not parts:
-            link = 'tools.ietf.org/html/rfc2388'
             self.fail('A payload in the body of your request is required '
                       '& must be encapsulated by the boundary with proper '
                       'headers according to RFC 2388', link)
+        elif len(parts) > 1:
+            self.fail('Currently, only 1 upload at a time is allowed. Please '
+                      'break up your request into %s individual requests & '
+                      'retry' % len(parts), link)
 
         for part in parts:
             part = parts[part]
