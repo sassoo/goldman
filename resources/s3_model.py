@@ -91,6 +91,7 @@ class Resource(BaseResource):
         """
 
         signals.responder_pre_any.send(self.model)
+        signals.responder_pre_upload.send(self.model)
 
         props = req.deserialize(self.mimetypes)
         model = find(self.model, rid)
@@ -115,3 +116,4 @@ class Resource(BaseResource):
         resp.serialize({'data': {'url': s3_url}})
 
         signals.responder_post_any.send(self.model)
+        signals.responder_post_upload.send(self.model)

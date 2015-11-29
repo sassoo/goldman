@@ -38,6 +38,9 @@ Signals for our file upload resources before & after an
 upload for a given model.
 """
 
+responder_pre_upload = blinker.signal('responder_pre_upload')
+responder_post_upload = blinker.signal('responder_post_upload')
+
 pre_upload = blinker.signal('pre_upload')
 post_upload = blinker.signal('post_upload')
 
