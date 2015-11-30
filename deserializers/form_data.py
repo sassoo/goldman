@@ -44,9 +44,6 @@ class Deserializer(BaseDeserializer):
                 'file-name': <file name of content>,
             }
 
-        The unique name is the required name provided for the part of
-        the multipart/form-data per RFC 2388 section 3.
-
         :param mimetypes:
             allowed mimetypes of the object in the request
             payload
