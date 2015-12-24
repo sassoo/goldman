@@ -6,7 +6,6 @@
     abort requests with JSON API compliant errors
 """
 
-import goldman
 import falcon
 
 
@@ -152,48 +151,41 @@ class InvalidURL(APIException):
 """
 
 
-class BasicAuthRequired(APIException):
-    """ The API requires Basic Authentication """
+class AuthRequired(APIException):
+    """ The API requires some sort of Authentication
+
+    This exception supports detail, headers, & links overrides.
+    """
 
     DETAIL = 'The URL requested (route) requires authentication. ' \
-             'We couldn\'t find an Authorization header as documented ' \
-             'in the Basic Authentication section of RFC 7235. Please ' \
-             'retry your request with authentication.'
+             'Please retry your request with authentication.'
 
     def __init__(self, **kwargs):
-        realm = 'Basic realm="{}"'.format(goldman.config.AUTH_REALM)
-
-        super(BasicAuthRequired, self).__init__(**{
-            'code': 'basic_auth_required',
-            'detail': self.DETAIL,
-            'headers': {
-                'WWW-Authenticate': realm,
-            },
-            'links': 'tools.ietf.org/html/rfc7235',
+        super(AuthRequired, self).__init__(**{
+            'code': 'auth_required',
+            'detail': kwargs.get('detail', self.DETAIL),
+            'headers': kwargs.get('headers'),
+            'links': kwargs.get('links'),
             'status': falcon.HTTP_401,
-            'title': 'Basic Authentication is required',
+            'title': 'Authentication is required',
         })
 
 
 class InvalidAuthSyntax(APIException):
-    """ The Authorization header provided is invalid. """
+    """ The Authentication provided is malformed. """
 
-    DETAIL = 'The Authorization header you provided could not be properly ' \
-             'interpreted. It appears to be malformed & does not follow ' \
-             'the guidelines of RFC 7235. Please check your syntax.'
+    DETAIL = 'The Authorization you provided could not be properly ' \
+             'interpreted; it appears to be malformed. Please check ' \
+             'your syntax.'
 
     def __init__(self, **kwargs):
-        realm = 'Basic realm="{}"'.format(goldman.config.AUTH_REALM)
-
         super(InvalidAuthSyntax, self).__init__(**{
             'code': 'invalid_auth_syntax',
-            'detail': self.DETAIL,
-            'headers': {
-                'WWW-Authenticate': realm,
-            },
-            'links': 'tools.ietf.org/html/rfc7235',
+            'detail': kwargs.get('detail', self.DETAIL),
+            'headers': kwargs.get('headers'),
+            'links': kwargs.get('links'),
             'status': falcon.HTTP_401,
-            'title': 'Invalid Authorization header',
+            'title': 'Invalid authentication syntax',
         })
 
 
@@ -204,14 +196,10 @@ class InvalidPassword(APIException):
              'you spelled it correctly & retry.'
 
     def __init__(self, **kwargs):
-        realm = 'Basic realm="{}"'.format(goldman.config.AUTH_REALM)
-
         super(InvalidPassword, self).__init__(**{
             'code': 'invalid_password',
             'detail': self.DETAIL,
-            'headers': {
-                'WWW-Authenticate': realm,
-            },
+            'headers': kwargs.get('headers'),
             'status': falcon.HTTP_401,
             'title': 'Invalid password',
         })
@@ -224,14 +212,10 @@ class InvalidUsername(APIException):
              'you spelled it correctly & retry.'
 
     def __init__(self, **kwargs):
-        realm = 'Basic realm="{}"'.format(goldman.config.AUTH_REALM)
-
         super(InvalidUsername, self).__init__(**{
             'code': 'invalid_username',
             'detail': self.DETAIL,
-            'headers': {
-                'WWW-Authenticate': realm,
-            },
+            'headers': kwargs.get('headers'),
             'status': falcon.HTTP_401,
             'title': 'Invalid username',
         })

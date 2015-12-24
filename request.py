@@ -40,6 +40,20 @@ class Request(FalconRequest):
         self.login = None
 
     @property
+    def auth_scheme(self):
+        """ If an Authorization header is present get the scheme
+
+        It is expected to be the first string in a space separated
+        list.
+        """
+
+        try:
+            auth = getattr(self, 'auth')
+            return auth.split(' ')[0].strip('"').lower()
+        except (AttributeError, IndexError):
+            return None
+
+    @property
     def content_type_required(self):
         """ Check if a Content-Type request header is needed
 
