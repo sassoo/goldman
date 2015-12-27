@@ -11,11 +11,32 @@ import uuid
 from datetime import datetime as dt
 
 
-def random_salt_and_hash(val):
-    """ Given a value generate a salt & hash
+def cmp_val_salt_hash(val, salt, str_hash):
+    """ Given a string, salt, & hash validate the string
 
-    The salt will be randomly generated & the hash will be
-    a sha256 hex value of the value provided & the salt as
+    The salt & val will be concatented as in gen_salt_and hash()
+    & compared to the provided hash. This will only ever work
+    with hashes derived from gen_salt_and_hash()
+
+    :param val: clear-text string
+    :param salt: string salt
+    :param str_hash: existing hash to compare against
+    :return: boolean
+    """
+
+    computed_hash = hashlib.sha256(val + salt).hexdigest()
+
+    return computed_hash == str_hash
+
+
+def gen_salt_and_hash(val=None):
+    """ Generate a salt & hash
+
+    If no string is provided then a random string will be
+    used to hash & referred to as `val`.
+
+    The salt will always be randomly generated & the hash
+    will be a sha256 hex value of the `val` & the salt as
     a concatenated string. It follows the guidance here:
 
         crackstation.net/hashing-security.htm#properhashing
@@ -23,6 +44,9 @@ def random_salt_and_hash(val):
     :param val: str
     :return: tuple of strings (salt, hash)
     """
+
+    if not val:
+        val = random_str()
 
     str_salt = random_str()
     str_hash = hashlib.sha256(val + str_salt).hexdigest()

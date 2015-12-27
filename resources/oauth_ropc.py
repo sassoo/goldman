@@ -11,7 +11,7 @@
         tools.ietf.org/html/rfc6749#section-4.3
 
     The resource requires a callable to be passed in as the
-    validate_creds property which will be given a username &
+    auth_creds property which will be given a username &
     password. The callable should return a tuple of:
 
         (model, token)
@@ -60,9 +60,9 @@ class Resource(BaseResource):
         goldman.JSONSerializer,
     ]
 
-    def __init__(self, validate_creds):
+    def __init__(self, auth_creds):
 
-        self.validate_creds = validate_creds
+        self.auth_creds = auth_creds
         super(Resource, self).__init__()
 
     @property
@@ -106,7 +106,7 @@ class Resource(BaseResource):
                 'error_uri': 'tools.ietf.org/html/rfc6749#section-4.3.2',
             })
         else:
-            auth_code = self.validate_creds(username, password)
+            auth_code = self.auth_creds(username, password)
 
             if isinstance(auth_code, str):
                 resp.status = falcon.HTTP_401

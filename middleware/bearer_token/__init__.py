@@ -10,7 +10,7 @@
     client via the Authorization header.
 
     This middleware requires a callable to be passed in as
-    the validate_token property which will be given the token.
+    the auth_token property which will be given the token.
     The callable should return a model representing the logged
     in user. The model will be assigned to the goldman.sess.login
     property.
@@ -36,13 +36,13 @@ from falcon.http_status import HTTPStatus
 class Middleware(object):
     """ Ensure RFC compliance & authenticate the token. """
 
-    def __init__(self, token_endpoint='/token', validate_token=None):
+    def __init__(self, token_endpoint='/token', auth_token=None):
 
         self.token_endpoint = token_endpoint
-        self.validate_token = validate_token
+        self.auth_token = auth_token
 
-        if not validate_token:
-            raise NotImplementedError('a validate_token callback is required')
+        if not auth_token:
+            raise NotImplementedError('a auth_token callback is required')
 
     @property
     def _error_headers(self):
@@ -123,7 +123,7 @@ class Middleware(object):
             raise HTTPStatus(falcon.HTTP_401, self._error_headers)
 
         token = self.get_token(req)
-        auth_code = self.validate_token(token)
+        auth_code = self.auth_token(token)
 
         if isinstance(auth_code, str):
             self.abort_invalid_token(auth_code)
