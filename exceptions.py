@@ -151,6 +151,22 @@ class InvalidURL(APIException):
 """
 
 
+class AuthRejected(APIException):
+    """ The auth provided was rejected for some reason. """
+
+    DETAIL = 'The authentication credentials provided could not be ' \
+             'validated. Double check your spelling & retry.'
+
+    def __init__(self, **kwargs):
+        super(AuthRejected, self).__init__(**{
+            'code': 'auth_rejected',
+            'detail': kwargs.get('detail', self.DETAIL),
+            'headers': kwargs.get('headers'),
+            'status': falcon.HTTP_401,
+            'title': 'Authentication attempt rejected',
+        })
+
+
 class AuthRequired(APIException):
     """ The API requires some sort of Authentication
 
@@ -186,38 +202,6 @@ class InvalidAuthSyntax(APIException):
             'links': kwargs.get('links'),
             'status': falcon.HTTP_401,
             'title': 'Invalid authentication syntax',
-        })
-
-
-class InvalidPassword(APIException):
-    """ The password provided is invalid. """
-
-    DETAIL = 'The password provided could not be validated. Confirm ' \
-             'you spelled it correctly & retry.'
-
-    def __init__(self, **kwargs):
-        super(InvalidPassword, self).__init__(**{
-            'code': 'invalid_password',
-            'detail': self.DETAIL,
-            'headers': kwargs.get('headers'),
-            'status': falcon.HTTP_401,
-            'title': 'Invalid password',
-        })
-
-
-class InvalidUsername(APIException):
-    """ The username provided is invalid. """
-
-    DETAIL = 'The username provided could not be found. Confirm ' \
-             'you spelled it correctly & retry.'
-
-    def __init__(self, **kwargs):
-        super(InvalidUsername, self).__init__(**{
-            'code': 'invalid_username',
-            'detail': self.DETAIL,
-            'headers': kwargs.get('headers'),
-            'status': falcon.HTTP_401,
-            'title': 'Invalid username',
         })
 
 

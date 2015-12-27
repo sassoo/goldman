@@ -24,50 +24,15 @@ class Middleware(object):
         if not validate_creds:
             raise NotImplementedError('a validate_creds callback is required')
 
-    def process_request(self, req, resp):  # pylint: disable=unused-argument
-        """ Process the request before routing it.
-
-        If authentication succeeds then the request object & the
-        thread local instance will have a login property updated
-        with a value of the login model from the database.
-        """
-
-        signals.pre_authenticate.send()
-
-        self._validate_headers(req)
-        username, password = self._get_creds(req)
-
-        if not username or not password:
-            abort(exceptions.InvalidAuthSyntax(**{
-                'detail': 'The username & password could not be discovered '
-                          'in the provided Authorization header. It appears '
-                          'to be malformed & does not follow the guidelines '
-                          'of RFC 2617. Please check your syntax & retry.',
-                'headers': self._fail_headers,
-                'links': 'tools.ietf.org/html/rfc2617#section-2',
-            }))
-
-        auth_code = self.validate_creds(username, password)
-
-        if auth_code == 'invalid_username':
-            abort(exceptions.InvalidUsername(**{
-                'headers': self._fail_headers,
-            }))
-        elif auth_code == 'invalid_password':
-            abort(exceptions.InvalidPassword(**{
-                'headers': self._fail_headers,
-            }))
-        else:
-            goldman.sess.login = auth_code
-            req.login = auth_code
-
-        signals.post_authenticate.send()
-
     @property
-    def _fail_headers(self):
+    def _error_headers(self):
         """ Return a dict of headers in every auth failure """
 
-        return {'WWW-Authenticate': self._realm}
+        return {
+            'Cache-Control': 'no-store',
+            'Pragma': 'no-cache',
+            'WWW-Authenticate': self._realm,
+        }
 
     @property
     def _realm(self):
@@ -89,14 +54,12 @@ class Middleware(object):
         try:
             creds = req.auth.split(' ')[1]
             creds = b64decode(creds)
-            username, password = creds.split(':')
+            return creds.split(':')
         except (IndexError, TypeError, ValueError):
             return None, None
 
-        return username, password
-
-    def _validate_headers(self, req):
-        """ Abort on a customized authentication required exception """
+    def get_creds(self, req):
+        """ Validate the Authorization header per RFC guidelines """
 
         if not req.auth:
             abort(exceptions.AuthRequired(**{
@@ -104,7 +67,7 @@ class Middleware(object):
                           'We couldn\'t find an Authorization header as '
                           'documented in RFC 2617. Please modify & retry your '
                           'request with an Authorization header.',
-                'headers': self._fail_headers,
+                'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             }))
         elif req.auth_scheme != 'basic':
@@ -112,6 +75,42 @@ class Middleware(object):
                 'detail': 'The "scheme" provided in the Authorization header '
                           'MUST be the string "Basic" as documented in RFC '
                           '2617. Please alter your header & retry.',
-                'headers': self._fail_headers,
+                'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             }))
+
+        username, password = self.get_creds(req)
+        if not username or not password:
+            abort(exceptions.InvalidAuthSyntax(**{
+                'detail': 'The username & password could not be discovered '
+                          'in the provided Authorization header. It appears '
+                          'to be malformed & does not follow the guidelines '
+                          'of RFC 2617. Please check your syntax & retry.',
+                'headers': self._error_headers,
+                'links': 'tools.ietf.org/html/rfc2617#section-2',
+            }))
+
+        return username, password
+
+    def process_request(self, req, resp):  # pylint: disable=unused-argument
+        """ Process the request before routing it.
+
+        If authentication succeeds then the thread local instance
+        will have a login property updated with a value of the
+        login model from the database.
+        """
+
+        signals.pre_authenticate.send()
+
+        username, password = self.get_creds(req)
+        auth_code = self.validate_creds(username, password)
+
+        if isinstance(auth_code, str):
+            abort(exceptions.AuthRejected(**{
+                'detail': auth_code,
+                'headers': self._error_headers,
+            }))
+        else:
+            goldman.sess.login = auth_code
+
+        signals.post_authenticate.send()

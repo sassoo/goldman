@@ -10,6 +10,7 @@
 """
 
 from ..middleware.basicauth import Middleware as BasicAuthMiddleware
+from ..middleware.bearer_token import Middleware as BearerTokenMiddleware
 from ..middleware.deserializer import Middleware as DeserializerMiddleware
 from ..middleware.falcon_catcher import Middleware as FalconCatcherMiddleware
 from ..middleware.model_qps import Middleware as ModelQpsMiddleware
@@ -20,6 +21,7 @@ from ..middleware.threadlocal import Middleware as ThreadLocalMiddleware
 
 MIDDLEWARES = [
     BasicAuthMiddleware,
+    BearerTokenMiddleware,
     DeserializerMiddleware,
     FalconCatcherMiddleware,
     ModelQpsMiddleware,

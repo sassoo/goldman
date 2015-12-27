@@ -5,9 +5,35 @@
     Convient string helpers. That's it.
 """
 
+import hashlib
 import uuid
 
 from datetime import datetime as dt
+
+
+def random_salt_and_hash(val):
+    """ Given a value generate a salt & hash
+
+    The salt will be randomly generated & the hash will be
+    a sha256 hex value of the value provided & the salt as
+    a concatenated string. It follows the guidance here:
+
+        crackstation.net/hashing-security.htm#properhashing
+
+    :param val: str
+    :return: tuple of strings (salt, hash)
+    """
+
+    str_salt = random_str()
+    str_hash = hashlib.sha256(val + str_salt).hexdigest()
+
+    return str_salt, str_hash
+
+
+def random_str():
+    """ Return a random string """
+
+    return str(uuid.uuid4())
 
 
 def str_to_bool(val):

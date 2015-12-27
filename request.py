@@ -14,9 +14,6 @@
 
       2) proxy the deserialize method to the selected
          deserializer
-
-      3) include a login property that can be whatever an
-         application chooses upon successful atuh
 """
 
 from falcon.request import Request as FalconRequest
@@ -37,7 +34,6 @@ class Request(FalconRequest):
         self.content_type = self._init_content_type()
 
         self.deserializer = None
-        self.login = None
 
     @property
     def auth_scheme(self):

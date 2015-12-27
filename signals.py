@@ -9,17 +9,13 @@ import blinker
 
 
 """
-Signals for our goldman authentication & authorization capable
-middleware. See the middleware for additional clarity on just
-when they are called.
+Signals for our goldman authentication interfaces. See the
+interfaces for additional clarity on just when they are called.
 """
 
 # pylint: disable=invalid-name
 pre_authenticate = blinker.signal('pre_authenticate')
 post_authenticate = blinker.signal('post_authenticate')
-
-pre_authorization = blinker.signal('pre_authorization')
-post_authorization = blinker.signal('post_authorization')
 
 
 """
