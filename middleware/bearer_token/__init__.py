@@ -101,9 +101,9 @@ class Middleware(object):
     def process_request(self, req, resp):  # pylint: disable=unused-argument
         """ Process the request before routing it.
 
-        If authentication succeeds then the request object & the
-        thread local instance will have a login property updated
-        with a value of the login model from the database.
+        If authentication succeeds then the thread local instance
+        will have a login property updated with a value of the
+        login model from the database.
 
         NOTE: all the logic in this middleware will be completely
               bypassed if the token endpoint is being accessed.

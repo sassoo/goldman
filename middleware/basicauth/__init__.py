@@ -45,17 +45,17 @@ class Middleware(object):
         """ Return a tuple of username & password from the request
 
         Per RFC 2617 section 2 the username & password are colon
-        separated & base64 encoded. They will come after the schema
+        separated & base64 encoded. They will come after the scheme
         is declared.
 
         :return: tuple (username, password) or None, None
         """
 
         try:
-            creds = req.auth.split(' ')[1]
+            creds = req.auth.split(' ')[1].strip()
             creds = b64decode(creds)
             return creds.split(':')
-        except (IndexError, TypeError, ValueError):
+        except (AttributeError, IndexError, TypeError, ValueError):
             return None, None
 
     def get_creds(self, req):
