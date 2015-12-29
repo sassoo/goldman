@@ -18,6 +18,15 @@ class Response(FalconResponse):
 
         self.serializer = None
 
+    def disable_caching(self):
+        """ Add some headers so the client won't cache the response
+
+        No return code, side-effects instead.
+        """
+
+        self.set_header('Cache-Control', 'no-store')
+        self.set_header('Pragma', 'no-cache')
+
     def serialize(self, *args, **kwargs):
         """ Simple proxy to the serializer's serialize function
 

@@ -86,8 +86,7 @@ class Resource(BaseResource):
 
         # errors or not, disable client caching along the way
         # per the spec
-        resp.set_header('Cache-Control', 'no-store')
-        resp.set_header('Pragma', 'no-cache')
+        resp.disable_caching()
 
         if not grant_type or not password or not username:
             resp.status = falcon.HTTP_400
