@@ -36,13 +36,12 @@ from falcon.http_status import HTTPStatus
 class Middleware(object):
     """ Ensure RFC compliance & authenticate the token. """
 
-    def __init__(self, token_endpoint='/token', auth_token=None):
+    def __init__(self, auth_token, revoke_endpoint='/revoke',
+                 token_endpoint='/token'):
 
-        self.token_endpoint = token_endpoint
         self.auth_token = auth_token
-
-        if not auth_token:
-            raise NotImplementedError('a auth_token callback is required')
+        self.revoke_endpoint = revoke_endpoint
+        self.token_endpoint = token_endpoint
 
     @property
     def _error_headers(self):
@@ -106,12 +105,14 @@ class Middleware(object):
         login model from the database.
 
         NOTE: all the logic in this middleware will be completely
-              bypassed if the token endpoint is being accessed.
-              This is so the initial access_token request can
-              complete before a bearer token is even known.
+              bypassed if the token_endpoint or revoke_endpoint
+              is being accessed.
+
+              This is so they can complete when a bearer token
+              is not known or passed in differently.
         """
 
-        if req.path == self.token_endpoint:
+        if req.path in (self.revoke_endpoint, self.token_endpoint):
             return
 
         signals.pre_authenticate.send()

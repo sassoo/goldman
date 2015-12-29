@@ -17,12 +17,9 @@ from base64 import b64decode
 class Middleware(object):
     """ Ensure RFC compliance & authenticate the user. """
 
-    def __init__(self, validate_creds=None):
+    def __init__(self, validate_creds):
 
         self.validate_creds = validate_creds
-
-        if not validate_creds:
-            raise NotImplementedError('a validate_creds callback is required')
 
     @property
     def _error_headers(self):

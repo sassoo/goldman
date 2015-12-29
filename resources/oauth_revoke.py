@@ -1,6 +1,6 @@
 """
-    resources.oauth_revocation
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    resources.oauth_revoke
+    ~~~~~~~~~~~~~~~~~~~~~~
 
     OAuth2 Token Revocation resource object with responders.
 
