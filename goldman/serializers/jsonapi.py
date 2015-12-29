@@ -39,7 +39,6 @@ class Serializer(BaseSerializer):
 
         if isinstance(data, list):
             body['meta']['total'] = self.req.pages.total
-
             body.update({'data': self._serialize_datas(data)})
             body.update({'links': self._serialize_pages()})
         elif data:
