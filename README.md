@@ -116,7 +116,7 @@ The models fields will be cast to the appropriate data types for extra business 
 
  * [Faclon](https://github.com/falconry/falcon) core WSGI capability
  * [Psycopg2](http://initd.org/psycopg/) for postgres integration
- * [Blinker](https://github.com/jek/blinker) for signalling model events
- * [Schematics](http://codemirror.net/) for the awesome syntax-highlighted editor
+ * [Blinker](https://github.com/jek/blinker) for signalling events
+ * [Schematics](http://codemirror.net/) for the awesome object schema layer with validations & a bunch more
  * [Python-PhoneNumbers](https://github.com/daviddrysdale/python-phonenumbers) for phone number validations
  * [Python-US](https://github.com/unitedstates/python-us) for state validations
