@@ -14,6 +14,7 @@
     is in use.
 """
 
+import goldman
 import goldman.signals as signals
 
 from ..models.base import Model as BaseModel
@@ -46,8 +47,6 @@ def pre_create(sender, model):
 
     Generate a new UUID rid & set the created timestamp.
     """
-
-    import goldman
 
     model.created = dt.utcnow()
     model.creator = goldman.sess.login
