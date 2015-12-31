@@ -35,3 +35,15 @@ class Resource(object):
 
             if name not in disable:
                 setattr(self, name, func)
+
+    @property
+    def deserializer_mimetypes(self):
+        """ Return a list of string mimetypes supported as deserializers """
+
+        return [d.MIMETYPE for d in self.DESERIALIZERS]
+
+    @property
+    def serializer_mimetypes(self):
+        """ Return a list of string mimetypes supported as serializers """
+
+        return [s.MIMETYPE for s in self.SERIALIZERS]
