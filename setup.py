@@ -5,7 +5,7 @@ from setuptools import setup
 setup(
     name='goldman',
     packages=['goldman'],
-    version='0.1.2',
+    version='0.1.0',
     description='An opinionated WSGI web framework',
     author='Sassoo',
     author_email='noreply@devnull.seriously',
