@@ -5,13 +5,13 @@ from setuptools import find_packages, setup
 setup(
     name='goldman',
     packages=find_packages(),
-    version='0.1.0',
+    version='0.1.1',
     description='An opinionated WSGI web framework',
     author='Sassoo',
     author_email='noreply@devnull.seriously',
     url='https://github.com/sassoo/goldman',
     license='MIT',
-    download_url='https://github.com/sassoo/goldman/tarball/0.1.0',
+    download_url='https://github.com/sassoo/goldman/tarball/0.1.1',
     keywords=['framework', 'http', 'jsonapi', 'rest', 'web', 'wsgi'],
     classifiers=[
         'Intended Audience :: Developers',
