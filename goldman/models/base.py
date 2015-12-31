@@ -21,9 +21,6 @@ from schematics.models import Model as _SchematicsModel
 from schematics.types import EmailType
 
 
-__all__ = ['Model']
-
-
 class Model(_SchematicsModel):
     """ Our schematics sub-classed model """
 
@@ -179,6 +176,12 @@ class Model(_SchematicsModel):
                 ret.append(exceptions.ValidationFailure(attr, detail=error))
 
         return ret
+
+    @property
+    def dirty(self):
+        """ Return a boolean indicating the dirty state of the model """
+
+        return bool(self.dirty_fields)
 
     @property
     def dirty_fields(self):
