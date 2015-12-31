@@ -424,6 +424,30 @@ class ContentTypeUnsupported(APIException):
 
 
 """
+    417 Expectation Failed
+    ~~~~~~~~~~~~~~~~~~~~~~
+"""
+
+
+class ExpectationUnmet(APIException):
+    """ The request included an Expect header that is unsupported """
+
+    DETAIL = 'Our API does not currently support any implementation ' \
+             'of the Expect header. Please remove the header & retry ' \
+             'your request.'
+
+    def __init__(self, **kwargs):
+
+        super(ExpectationUnmet, self).__init__(**{
+            'code': 'expectation_unmet',
+            'detail': self.DETAIL,
+            'links': 'tools.ietf.org/html/rfc7231#section-5.1.1',
+            'status': falcon.HTTP_417,
+            'title': 'Expectation cannot be met',
+        })
+
+
+"""
     422 Unprocessable Entity
     ~~~~~~~~~~~~~~~~~~~~~~~~~~
 """

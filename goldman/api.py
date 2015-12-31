@@ -34,6 +34,7 @@ class API(falcon.API):
 
         middleware = [
             goldman.SecurityMiddleware(),
+            goldman.RFC7231Middleware(),
             goldman.FalconCatcherMiddleware(),
             goldman.DeserializerMiddleware(),
             goldman.SerializerMiddleware(),

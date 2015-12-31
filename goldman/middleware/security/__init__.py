@@ -15,7 +15,7 @@ from goldman.utils.error_helpers import abort
 
 
 class Middleware(object):
-    """ Falcon error handler middleware """
+    """ Falcon security middleware """
 
     # pylint: disable=unused-argument
     def process_request(self, req, resp):
