@@ -329,37 +329,27 @@ class MethodNotAllowed(APIException):
 
 
 class RequestNotAcceptable(APIException):
-    """ No acceptable serializers found in the request """
+    """ The request requires a supported Accept header
 
-    DETAIL = 'Your request did not contain an Accept header with any ' \
-             'MIMETYPE\'s that we support. Please modify your ' \
-             'response preference & retry.'
+    This exception supports an array of supported Accept headers
+    to be passed to the caller upon failure.
+    """
 
-    def __init__(self, **kwargs):
+    DETAIL = 'The URL requested (route) does not support the Accept ' \
+             'header (mimetype) you provided. Supported mimetypes for ' \
+             'the route are: {}. Also, a blank mimetype is equivalent to ' \
+             '"*/*" & is acceptable. Please update your Accept header & ' \
+             'retry your request.'
 
+    def __init__(self, mimetypes, **kwargs):
+
+        mimetypes = ', '.join('"{0}"'.format(m) for m in mimetypes)
         super(RequestNotAcceptable, self).__init__(**{
             'code': 'request_not_acceptable',
-            'detail': self.DETAIL,
+            'detail': self.DETAIL.format(mimetypes),
             'links': 'tools.ietf.org/html/rfc7231#section-5.3.2',
             'status': falcon.HTTP_406,
             'title': 'Unacceptable response preference',
-        })
-
-
-class SerializerNotAllowed(APIException):
-    """ The serializer chosen is not allowed for the URL requested """
-
-    DETAIL = 'Your response preference (Accept header) is supported by ' \
-             'our API but not for that route. Please review our docs ' \
-             '& retry your request with a different response preference.'
-
-    def __init__(self, **kwargs):
-
-        super(SerializerNotAllowed, self).__init__(**{
-            'code': 'serializer_not_allowed',
-            'detail': self.DETAIL,
-            'status': falcon.HTTP_406,
-            'title': 'Serializer is unacceptable for this route',
         })
 
 
@@ -407,59 +397,29 @@ class ResourceTypeNotAllowed(APIException):
 """
 
 
-class ContentTypeRequired(APIException):
-    """ The request requires a Content-Type header """
+class ContentTypeUnsupported(APIException):
+    """ The request requires a supported Content-Type header
+
+    This exception supports an array of supported Content-Type's
+    to be passed to the caller upon failure.
+    """
 
     DETAIL = 'The URL requested (route) & the HTTP method used ' \
-             'require a Content-Type header. Unfortunately we ' \
-             'couldn\'t find the header in your request. Please ' \
-             'retry your request with all required headers.'
+             'require a Content-Type header. Unfortunately, we ' \
+             'couldn\'t find the header in your request or the one ' \
+             'provided is unsupported. Supported content types for ' \
+             'the route are: {}. Please update your Content-Type & ' \
+             'retry your request.'
 
-    def __init__(self, **kwargs):
+    def __init__(self, mimetypes, **kwargs):
 
-        super(ContentTypeRequired, self).__init__(**{
+        mimetypes = ', '.join('"{0}"'.format(m) for m in mimetypes)
+        super(ContentTypeUnsupported, self).__init__(**{
             'code': 'content_type_required',
-            'detail': self.DETAIL,
-            'links': 'tools.ietf.org/html/rfc7231#section-3.1.1.5',
-            'status': falcon.HTTP_415,
-            'title': 'Content-type header required',
-        })
-
-
-class DeserializerNotAllowed(APIException):
-    """ The deserializer chosen is not allowed for the URL requested """
-
-    DETAIL = 'Your requested Media Type (Content-Type header) is ' \
-             'supported by our API but not for that route. Please ' \
-             'review our docs & retry your request with a different ' \
-             'media type.'
-
-    def __init__(self, **kwargs):
-
-        super(DeserializerNotAllowed, self).__init__(**{
-            'code': 'deserializer_not_allowed',
-            'detail': self.DETAIL,
+            'detail': self.DETAIL.format(mimetypes),
             'links': 'tools.ietf.org/html/rfc7231#section-6.5.13',
             'status': falcon.HTTP_415,
-            'title': 'Deserializer is unsupported for this route',
-        })
-
-
-class RequestUnsupported(APIException):
-    """ No requested deserializer could be found """
-
-    DETAIL = 'Your requested Media Type (Content-Type header) is ' \
-             'unsupported by our API. Please review our docs & ' \
-             'retry your request with a different media type.'
-
-    def __init__(self, **kwargs):
-
-        super(RequestUnsupported, self).__init__(**{
-            'code': 'content_type_unsupported',
-            'detail': self.DETAIL,
-            'links': 'tools.ietf.org/html/rfc7231#section-6.5.13',
-            'status': falcon.HTTP_415,
-            'title': 'The Content-Type provided is unsupported',
+            'title': 'Content-type header missing & required or unsupported',
         })
 
 

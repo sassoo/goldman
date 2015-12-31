@@ -27,7 +27,7 @@ def _get_serializer(mimetype):
     """
 
     for serializer in goldman.SERIALIZERS:
-        if mimetype == serializer.MIMETYPE.lower():
+        if mimetype == serializer.MIMETYPE:
             return serializer
 
     return None
@@ -43,18 +43,13 @@ class Middleware(object):
         serializers are allowed.
         """
 
+        allowed = resource.serializer_mimetypes
+
         if resource:
-            mimetypes = [s.MIMETYPE for s in resource.SERIALIZERS]
-            preferred = req.client_prefers(mimetypes)
+            preferred = req.client_prefers(allowed)
 
             if not preferred:
-                abort(exceptions.RequestNotAcceptable)
+                abort(exceptions.RequestNotAcceptable(allowed))
             else:
                 serializer = _get_serializer(preferred)
-
-            if not serializer:
-                abort(exceptions.RequestNotAcceptable)
-            elif serializer not in resource.SERIALIZERS:
-                abort(exceptions.SerializerNotAllowed)
-            else:
                 resp.serializer = serializer(req, resp)

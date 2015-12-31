@@ -27,7 +27,7 @@ def _get_deserializer(mimetype):
     """
 
     for deserializer in goldman.DESERIALIZERS:
-        if mimetype == deserializer.MIMETYPE.lower():
+        if mimetype == deserializer.MIMETYPE:
             return deserializer
 
     return None
@@ -46,17 +46,15 @@ class Middleware(object):
         further processing.
         """
 
+        allowed = resource.deserializer_mimetypes
+
         if req.content_type_required and resource:
-            if not req.content_type:
-                abort(exceptions.ContentTypeRequired)
+            if not req.content_type or req.content_type not in allowed:
+                abort(exceptions.ContentTypeUnsupported(allowed))
             else:
                 deserializer = _get_deserializer(req.content_type)
 
-            if not deserializer:
-                abort(exceptions.RequestUnsupported)
-            elif deserializer not in resource.DESERIALIZERS:
-                abort(exceptions.DeserializerNotAllowed)
-            elif req.content_length in (None, 0):
+            if req.content_length in (None, 0):
                 abort(exceptions.EmptyRequestBody)
             else:
                 req.deserializer = deserializer(req, resp)
