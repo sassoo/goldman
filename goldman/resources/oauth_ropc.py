@@ -93,7 +93,8 @@ class Resource(BaseResource):
             resp.serialize({
                 'error': 'invalid_request',
                 'error_description': 'A grant_type, username, & password '
-                                     'parameters are all required',
+                                     'parameters are all required when '
+                                     'requesting an OAuth access_token',
                 'error_uri': 'tools.ietf.org/html/rfc6749#section-4.3.2',
             })
         elif grant_type != 'password':
@@ -101,7 +102,7 @@ class Resource(BaseResource):
             resp.serialize({
                 'error': 'unsupported_grant_type',
                 'error_description': 'The grant_type parameter MUST be set '
-                                     'to "password"',
+                                     'to "password" not "%s"' % grant_type,
                 'error_uri': 'tools.ietf.org/html/rfc6749#section-4.3.2',
             })
         else:
