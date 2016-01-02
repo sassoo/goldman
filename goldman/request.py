@@ -51,11 +51,7 @@ class Request(FalconRequest):
 
     @property
     def content_required(self):
-        """ Check if a Content-Type request header is needed
-
-        True if the HTTP Method requires a Content-Type
-        otherwise False.
-        """
+        """ Check if a Content-* request headers are needed """
 
         return self.method in ('PATCH', 'POST', 'PUT')
 

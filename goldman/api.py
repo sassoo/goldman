@@ -33,6 +33,7 @@ class API(falcon.API):
     def __init__(self):
 
         middleware = [
+            goldman.RateLimitMiddleware(),
             goldman.SecurityMiddleware(),
             goldman.HttpSpecsMiddleware(),
             goldman.DeserializerMiddleware(),

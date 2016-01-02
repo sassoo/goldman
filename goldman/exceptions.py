@@ -500,6 +500,32 @@ class ExpectationUnmet(APIException):
 
 
 """
+    429 Too Many Requests
+    ~~~~~~~~~~~~~~~~~~~~~
+"""
+
+
+class TooManyRequests(APIException):
+    """ The client has exceeded the allotment of requests """
+
+    DETAIL = 'You have exceeded the request limit of {0} requests ' \
+             'per {1} seconds. Please try again after {2} seconds ' \
+             'have elapsed & let us know if this threshold is too ' \
+             'conservative.'
+
+    def __init__(self, **kwargs):
+
+        # XXX FIX: falcon 4.0 has falcon.HTTP_429 support
+        super(TooManyRequests, self).__init__(**{
+            'code': 'too_many_requests',
+            'detail': self.DETAIL,
+            'links': 'tools.ietf.org/html/rfc6585#section-4',
+            'status': '429 Too Many Requests',
+            'title': 'You are being rate-limited',
+        })
+
+
+"""
     422 Unprocessable Entity
     ~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
