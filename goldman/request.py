@@ -50,7 +50,7 @@ class Request(FalconRequest):
             return None
 
     @property
-    def content_type_required(self):
+    def content_required(self):
         """ Check if a Content-Type request header is needed
 
         True if the HTTP Method requires a Content-Type

@@ -43,9 +43,8 @@ class Middleware(object):
         serializers are allowed.
         """
 
-        allowed = resource.serializer_mimetypes
-
         if resource:
+            allowed = resource.serializer_mimetypes
             preferred = req.client_prefers(allowed)
 
             if not preferred:

@@ -46,9 +46,9 @@ class Middleware(object):
         further processing.
         """
 
-        allowed = resource.deserializer_mimetypes
+        if req.content_required and resource:
+            allowed = resource.deserializer_mimetypes
 
-        if req.content_type_required and resource:
             if not req.content_type or req.content_type not in allowed:
                 abort(exceptions.ContentTypeUnsupported(allowed))
             else:

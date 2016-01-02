@@ -43,6 +43,7 @@ class Config(object):
     SORT = 'created'
 
     # Security stuff
+    MAX_URI_LENGTH = 4000
     TLS_REQUIRED = True
 
     # URL prefix for the API

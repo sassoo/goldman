@@ -392,6 +392,58 @@ class ResourceTypeNotAllowed(APIException):
 
 
 """
+    411 Length Required
+    ~~~~~~~~~~~~~~~~~~~
+"""
+
+
+class ContentLengthRequired(APIException):
+    """ The request lacks any indication of body length """
+
+    DETAIL = 'Our API requires a Content-Length header according ' \
+             'to the guidelines of RFC 7230 (value >= 0). Empty ' \
+             'bodied requests should have a Content-Length of 0'
+
+    def __init__(self, **kwargs):
+
+        super(ContentLengthRequired, self).__init__(**{
+            'code': 'length_required',
+            'detail': self.DETAIL,
+            'links': 'tools.ietf.org/html/rfc7230#section-3.3.2',
+            'status': falcon.HTTP_411,
+            'title': 'A Content-Length header is required',
+        })
+
+
+"""
+    414 URI Too Long
+    ~~~~~~~~~~~~~~~~
+"""
+
+
+class URITooLong(APIException):
+    """ The request URI exceeds goldman.config.MAX_URI_LENGTH
+
+    This exception requires a value of maximum URI length to
+    be passed in for a more detailed response.
+    """
+
+    DETAIL = 'The URI in your request has exceeded the maximum ' \
+             'length of %s. There isn\'t much you can do except ' \
+             'contact us if you believe this is an error.'
+
+    def __init__(self, max_length, **kwargs):
+
+        super(URITooLong, self).__init__(**{
+            'code': 'uri_too_long',
+            'detail': self.DETAIL.format(max_length),
+            'links': 'tools.ietf.org/html/rfc7231#section-6.5.12',
+            'status': falcon.HTTP_414,
+            'title': 'URI is too long',
+        })
+
+
+"""
     415 Unsupported Media Type
     ~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
@@ -434,7 +486,7 @@ class ExpectationUnmet(APIException):
 
     DETAIL = 'Our API does not currently support any implementation ' \
              'of the Expect header. Please remove the header & retry ' \
-             'your request.'
+             'your request per RFC 7231.'
 
     def __init__(self, **kwargs):
 
