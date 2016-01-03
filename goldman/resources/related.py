@@ -14,7 +14,11 @@ import goldman.signals as signals
 
 from ..resources.base import Resource as BaseResource
 from goldman.utils.error_helpers import abort
-from goldman.utils.responder_helpers import find, to_rest
+from goldman.utils.responder_helpers import (
+    find,
+    to_rest_model,
+    to_rest_models,
+)
 
 
 class Resource(BaseResource):
@@ -54,14 +58,14 @@ class Resource(BaseResource):
             }))
 
         model = find(self.model, rid)
-        model = getattr(model, related).load()
+        model_related = getattr(model, related).load()
 
-        if isinstance(model, list):
-            props = [to_rest(m, includes=req.includes) for m in model]
+        if isinstance(model_related, list):
+            props = to_rest_models(model_related, includes=req.includes)
         elif model:
-            props = to_rest(model, includes=req.includes)
+            props = to_rest_model(model_related, includes=req.includes)
         else:
-            props = model
+            props = model_related
 
         resp.serialize(props)
 

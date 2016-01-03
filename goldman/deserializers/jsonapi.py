@@ -75,9 +75,9 @@ class Deserializer(BaseDeserializer):
 
         Perform the following:
 
-            1) Add the type as a resource property
-            2) Flatten the payload
-            3) Add the id as a rid property ONLY if present
+            1) add the type as a rtype property
+            2) flatten the payload
+            3) add the id as a rid property ONLY if present
 
         We don't need to vet the inputs much because the
         Parser has already done all the work.

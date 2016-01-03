@@ -21,10 +21,9 @@ class Serializer(object):
         """ Invoke the serializer
 
         These are common things for all serializers. Mostly,
-        stuff to do with managing headers.
-
-        :param data: the already serialized data
+        stuff to do with managing headers. The data passed
+        in may not be reliable for much of anything.
         """
 
         if not self.resp.content_type:
-            self.resp.content_type = getattr(self, 'MIMETYPE')
+            self.resp.set_header('Content-Type', getattr(self, 'MIMETYPE'))

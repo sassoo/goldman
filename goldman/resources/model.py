@@ -13,7 +13,11 @@ import goldman
 import goldman.signals as signals
 
 from ..resources.base import Resource as BaseResource
-from goldman.utils.responder_helpers import *
+from goldman.utils.responder_helpers import (
+    find,
+    from_rest,
+    to_rest_model,
+)
 
 
 def on_delete(resc, req, resp, rid):  # pylint: disable=unused-argument
@@ -42,10 +46,9 @@ def on_get(resc, req, resp, rid):
     signals.responder_pre_find.send(resc.model)
 
     model = find(resc.model, rid)
-    props = to_rest(model, includes=req.includes)
+    props = to_rest_model(model, includes=req.includes)
 
     resp.last_modified = model.updated
-
     resp.serialize(props)
 
     signals.responder_post_any.send(resc.model)
@@ -64,9 +67,8 @@ def on_patch(resc, req, resp, rid):
     from_rest(model, props)
     goldman.sess.store.update(model)
 
-    props = to_rest(model, includes=req.includes)
+    props = to_rest_model(model, includes=req.includes)
     resp.last_modified = model.updated
-
     resp.serialize(props)
 
     signals.responder_post_any.send(resc.model)

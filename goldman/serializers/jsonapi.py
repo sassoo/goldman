@@ -27,26 +27,29 @@ class Serializer(BaseSerializer):
         be run otherwise serialize_data.
         """
 
+        super(Serializer, self).serialize(data)
+
         body = {
             'jsonapi': {
-                'version': goldman.config.JSONAPI_VERSION
+                'version': goldman.config.JSONAPI_VERSION,
             },
             'links': {
-                'self': self.req.path
+                'self': self.req.path,
             },
-            'meta': {}
         }
 
-        if isinstance(data, list):
-            body['meta']['total'] = self.req.pages.total
-            body.update({'data': self._serialize_datas(data)})
+        included = data['included']
+        if included:
+            body['included'] = self._serialize_datas(included)
+
+        _data = data['data']
+        if isinstance(_data, list):
+            body.update({'data': self._serialize_datas(_data)})
             body.update({'links': self._serialize_pages()})
-        elif data:
-            body.update({'data': self._serialize_data(data)})
+        elif _data:
+            body.update({'data': self._serialize_data(_data)})
         else:
             body.update({'data': None})
-
-        super(Serializer, self).serialize(data)
 
         self.resp.body = json.dumps(body, indent=4)
 
@@ -63,12 +66,15 @@ class Serializer(BaseSerializer):
     def _serialize_data(self, data):
         """ Turn the data into a JSON API compliant resource object
 
+        WARN: This function has both side effects & a return.
+              It's complete shit because it mutates data &
+              yet returns a new doc. FIX.
+
         :spec: jsonapi.org/format/#document-resource-objects
         :param data: dict
         :return: dict
         """
 
-        included = []
         rels = {}
         rlink = rid_url(data['rtype'], data['rid'])
 
@@ -80,29 +86,49 @@ class Serializer(BaseSerializer):
             },
         }
 
-        for include in data['include']:
-            included.append(self._serialize_data(include))
-        del data['include']
-
         for key, val in data['to_many'].items():
             rels.update(self._serialize_to_many(key, val, rlink))
-        del data['to_many']
 
         for key, val in data['to_one'].items():
             rels.update(self._serialize_to_one(key, val, rlink))
+
+        # purge all fields that aren't real attributes
+        del data['to_many']
         del data['to_one']
 
         if data:
             doc['attributes'] = data
-        if included:
-            doc['included'] = included
         if rels:
             doc['relationships'] = rels
 
         return doc
 
+    def _serialize_included(self, data):
+        """ Return a JSON API compliant included section
+
+        Each include will need to be serialized since it's an
+        ordinary resource object but only perform serialization
+        according to the rules of the spec (otherwise ignore):
+
+            * the include MUST not already be an array member
+              of the included array (no dupes)
+
+            * the include MUST not be the same as the primary
+              data if the primary data is a single resource
+              object (no dupes)
+
+            * the include MUST not be an array member of the
+              primary data if the primary data an array of
+              resource objects (no dupes)
+
+        Basically, each included array member should be the only
+        instance of that resource object in the entire JSON API
+        response. Clients will create the association via the
+        relationship linkage in the datas relationship object.
+        """
+
     def _serialize_pages(self):
-        """ Update the links dict with pagination info """
+        """ Return a JSON API compliant pagination links section """
 
         path = self.req.path
         pages = self.req.pages

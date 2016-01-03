@@ -19,7 +19,7 @@ from goldman.utils.error_helpers import abort, mod_fail
 from schematics.types import IntType
 
 
-__all__ = ['find', 'from_rest', 'to_rest']
+__all__ = ['find', 'from_rest', 'to_rest_model', 'to_rest_models']
 
 
 def validate_rid(model, rid):
@@ -175,19 +175,34 @@ def _to_rest_hide(model, props):
             continue
 
 
-def _to_rest_include(model, props, includes):
+def _to_rest_includes(models, includes):
     """ Fetch the models to be included """
 
+    included = []
     includes = includes or []
-    props['include'] = []
+
+    if not isinstance(models, list):
+        models = [models]
 
     for include in includes:
-        rel = getattr(model, include)
+        for model in models:
+            rel = getattr(model, include)
 
-        if hasattr(rel, 'model') and rel.model:
-            props['include'].append(to_rest(rel.model))
-        elif hasattr(rel, 'models') and rel.models:
-            props['include'] += [to_rest(m) for m in rel.models]
+            if hasattr(rel, 'model') and rel.model:
+                rel_models = [rel.model]
+            elif hasattr(rel, 'models') and rel.models:
+                rel_models = rel.models
+
+            for rel_model in rel_models:
+                if rel_model in models or rel_model in included:
+                    continue
+                else:
+                    included.append(rel_model)
+
+    for idx, val in enumerate(included):
+        included[idx] = _to_rest(val)
+
+    return included
 
 
 def _to_rest_rels(model, props):
@@ -213,16 +228,17 @@ def _to_rest_rels(model, props):
             continue
 
 
-def to_rest(model, includes=None):
+def _to_rest(model, includes=None):
     """ Convert the model into a dict for serialization
 
     Notify schematics of the sparse fields requested while
     also forcing the resource id & resource type fields to always
     be present no matter the request. Additionally, any includes
-    are implicitely added as well.
+    are implicitly added as well & automatically loaded.
 
-    The load the includes, hide private fields, & munge the
-    relationships into a format the serializers are expecting.
+    Then normalize the includes, hide private fields, & munge
+    the relationships into a format the serializers are
+    expecting.
     """
 
     sparse = goldman.sess.req.fields.get(model.rtype, [])
@@ -235,11 +251,44 @@ def to_rest(model, includes=None):
         load_rels=includes,
         sparse_fields=sparse,
     )
+
     props['rid'] = props.pop(model.rid_field)
     props['rtype'] = props.pop(model.rtype_field)
 
-    _to_rest_include(model, props, includes)
     _to_rest_hide(model, props)
     _to_rest_rels(model, props)
+
+    return props
+
+
+def to_rest_model(model, includes=None):
+    """ Convert the single model into a dict for serialization
+
+    :return: dict
+    """
+
+    props = {}
+    props['data'] = _to_rest(model, includes=includes)
+    props['included'] = _to_rest_includes(model, includes=includes)
+
+    return props
+
+
+def to_rest_models(models, includes=None):
+    """ Convert the models into a dict for serialization
+
+    models should be an array of single model objects that
+    will each be serialized.
+
+    :return: dict
+    """
+
+    props = {}
+    props['data'] = []
+
+    for model in models:
+        props['data'].append(_to_rest(model, includes=includes))
+
+    props['included'] = _to_rest_includes(models, includes=includes)
 
     return props

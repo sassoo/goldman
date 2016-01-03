@@ -213,6 +213,12 @@ class Model(_SchematicsModel):
 
         return getattr(self, self.rid_field)
 
+    @property
+    def rtype_value(self):
+        """ Return the resource rtype field value """
+
+        return getattr(self, self.rtype_field)
+
     def merge(self, data, clean=False, validate=False):
         """ Merge a dict with the model
 

@@ -32,7 +32,6 @@ class ToMany(object):
         self.models = []
 
     def __eq__(self, other):
-        """ Compare other Sortable objects or strings """
 
         try:
             return self.field == other.field and \

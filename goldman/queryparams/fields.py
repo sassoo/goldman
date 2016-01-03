@@ -23,7 +23,7 @@ def _parse_param(key, val):
 
     Ensure the val or what will become the sparse `fields`
     is always an array. If the query param is not a sparse
-    fields query param the return None.
+    fields query param then return None.
 
     :param key:
         The query parameter to the left of the equal sign
@@ -55,7 +55,8 @@ def _validate_param(rtype, fields):
         model_fields = model.all_fields
     except AttributeError:
         abort(exceptions.InvalidQueryParams(**{
-            'detail': 'Unknown sparse field type of {}'.format(rtype),
+            'detail': 'The sparse field query parameter you provided '
+                      'with a field type of {} is unknown'.format(rtype),
             'parameter': 'fields',
         }))
 
@@ -81,8 +82,8 @@ def _validate_req(req):
 
     if not req.is_getting:
         abort(exceptions.InvalidQueryParams(**{
-            'detail': 'Sparse fields is only supported on GET '
-                      'requests',
+            'detail': 'Sparse field query parameters are only '
+                      'supported with GET requests',
             'parameter': 'fields',
         }))
 
@@ -104,15 +105,15 @@ def init(req, model):  # pylint: disable=unused-argument
 
     for key, val in req.params.items():
         try:
-            param_rtype, param_fields = _parse_param(key, val)
-        except (TypeError, ValueError):
+            rtype, fields = _parse_param(key, val)
+            params[rtype] = [field for field in fields]
+        except TypeError:
             continue
-
-        params[param_rtype] = sorted([field.lower() for field in param_fields])
 
     if params:
         _validate_req(req)
-        for rtype, fields in params.items():
-            _validate_param(rtype, fields)
+
+    for rtype, fields in params.items():
+        _validate_param(rtype, fields)
 
     return params

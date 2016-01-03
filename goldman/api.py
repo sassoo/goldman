@@ -33,7 +33,6 @@ class API(falcon.API):
     def __init__(self):
 
         middleware = [
-            goldman.RateLimitMiddleware(),
             goldman.SecurityMiddleware(),
             goldman.HttpSpecsMiddleware(),
             goldman.DeserializerMiddleware(),
@@ -100,7 +99,7 @@ class API(falcon.API):
             self.add_route(*route)
 
     @staticmethod
-    def _error_serializer(req, exc):  # pylint: disable=unused-argument
+    def _error_serializer(req, resp, exc):  # pylint: disable=unused-argument
         """ Serializer for native falcon HTTPError exceptions.
 
         We override the default serializer with our own so we can
