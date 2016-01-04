@@ -54,6 +54,12 @@ def gen_salt_and_hash(val=None):
     return str_salt, str_hash
 
 
+def naked(val):
+    """ Given a string strip off all white space & quotes """
+
+    return val.strip(' "\'\t')
+
+
 def random_str():
     """ Return a random string """
 
