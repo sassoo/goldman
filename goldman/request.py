@@ -8,15 +8,22 @@
     We extend the native Falcon request object in the following
     notable ways:
 
-      1) break up the Content-Type itself & its params into
-         separate properties. We override the native content_type
-         property to NOT include the params.
+      * break up the Content-Type itself & its params into
+        separate properties. We override the native content_type
+        property to NOT include the params.
 
-      2) proxy the deserialize method to the selected
-         deserializer
+      * proxy the deserialize method to the selected
+        deserializer
+
+      * proxy the deserialize method to the selected
+        deserializer
+
+      * is_<method> helpers to evaluate the type of method
+        being used as a truthy property
 """
 
 from falcon.request import Request as FalconRequest
+from goldman.utils.str_helpers import naked
 
 
 class Request(FalconRequest):
@@ -32,7 +39,6 @@ class Request(FalconRequest):
 
         self.content_type_params = self._init_content_type_params()
         self.content_type = self._init_content_type()
-
         self.deserializer = None
 
     @property
@@ -40,12 +46,12 @@ class Request(FalconRequest):
         """ If an Authorization header is present get the scheme
 
         It is expected to be the first string in a space separated
-        list.
+        list & will always be returned lowercase.
         """
 
         try:
             auth = getattr(self, 'auth')
-            return auth.split(' ')[0].strip('"').lower()
+            return naked(auth.split(' ')[0]).lower()
         except (AttributeError, IndexError):
             return None
 
@@ -79,16 +85,6 @@ class Request(FalconRequest):
 
         return self.method == 'POST'
 
-    def deserialize(self, *args, **kwargs):
-        """ Simple proxy to the deserializer's deserialize function
-
-        This allows code to later run request.deserialize() &
-        have it always call the deserialize method on the proper
-        deserializer.
-        """
-
-        return self.deserializer.deserialize(*args, **kwargs)
-
     def _init_content_type(self):
         """ Return the Content-Type request header excluding params
 
@@ -96,16 +92,16 @@ class Request(FalconRequest):
         predictable compares.
         """
 
-        if self.content_type:
-            return self.content_type.split(';')[0].strip().lower()
-        else:
+        try:
+            return naked(self.content_type.split(';')[0]).lower()
+        except (AttributeError, IndexError):
             return None
 
     def _init_content_type_params(self):
         """ Return the Content-Type request header parameters
 
-        Convert all of the colon separated parameters into
-        a dict of key/vals. If some stupid reason duplicate
+        Convert all of the semi-colon separated parameters into
+        a dict of key/vals. If for some stupid reason duplicate
         & conflicting params are present then the last one
         wins.
 
@@ -125,12 +121,21 @@ class Request(FalconRequest):
             for param in params:
                 try:
                     key, val = param.split('=')
-                except (AttributeError, ValueError):
+                    ret[naked(key)] = naked(val)
+                except ValueError:
                     continue
 
-                ret[key.strip()] = val.strip('"').strip()
-
         return ret
+
+    def deserialize(self, *args, **kwargs):
+        """ Simple proxy to the deserializer's deserialize function
+
+        This allows code to later run request.deserialize() &
+        have it always call the deserialize method on the proper
+        deserializer.
+        """
+
+        return self.deserializer.deserialize(*args, **kwargs)
 
     def get_body(self):
         """ Read in the request stream & return it as is
@@ -142,7 +147,8 @@ class Request(FalconRequest):
               Images or bulk payloads should be read in more
               intelligently by the deserializer.
 
-        :return: request payload as is
+        :return:
+            request payload as is
         """
 
         if self.content_length in (None, 0):
