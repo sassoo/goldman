@@ -57,15 +57,13 @@ class Config(object):
         try:
             module = os.environ.get('GOLDMAN_CONFIG_MODULE', '')
             module = importlib.import_module(module)
-        except (ImportError, ValueError):
-            module = None
 
-        if module:
             for attr in dir(module):
                 if not attr.startswith('_'):
                     val = getattr(module, attr)
-
                     setattr(self, attr, val)
+        except (ImportError, ValueError):
+            module = None
 
     def __getattr__(self, name):
         """ Return None if the attr isn't found
