@@ -2,8 +2,8 @@
     response
     ~~~~~~~~
 
-    Define our sub-classed Response object to be used instead of the
-    native falcon Response object.
+    Define our sub-classed Response object to be used instead
+    of the native falcon Response object.
 """
 
 from falcon.response import Response as FalconResponse
@@ -23,7 +23,7 @@ class Response(FalconResponse):
         """ Initialize the response object with default headers
 
         A summary of the rational behind adding the headers
-        by default is detailed below.
+        by default on a case-by-case basis is detailed below.
 
         Vary Header
         ~~~~~~~~~~~
