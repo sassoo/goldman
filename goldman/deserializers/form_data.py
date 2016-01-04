@@ -7,9 +7,10 @@
 
     It's broken down into 2 parts:
 
-        1) A parser for spec compliant validations
-        2) A normalizer for converting into a common
-           format expected by our resources/responders.
+        * A parser for spec compliant validations
+
+        * A normalizer for converting into a common
+          format expected by our resources/responders.
 
 
     WARN: Currently we only accept 1 upload at a time!
@@ -67,18 +68,14 @@ class Deserializer(BaseDeserializer):
             normalized dict
         """
 
-        ret = {}
+        part = parts.list[0]
 
-        for part in parts:
-            part = parts[part]
-            ret = {
-                'content': part.file.read(),
-                'content-type': part.type,
-                'file-ext': extensions.get(part.type),
-                'file-name': part.filename,
-            }
-
-        return ret
+        return {
+            'content': part.file.read(),
+            'content-type': part.type,
+            'file-ext': extensions.get(part.type),
+            'file-name': part.filename,
+        }
 
     def _parse_top_level_content_type(self):
         """ Ensure a boundary is present in the Content-Type header
@@ -110,22 +107,15 @@ class Deserializer(BaseDeserializer):
 
         link = 'tools.ietf.org/html/rfc2388#section-3'
 
-        if part.disposition != 'form-data':
+        if part.disposition != 'form-data' or not part.name:
             self.fail('Each part of a multipart/form-data requires a '
                       'Content-Disposition header with a disposition type '
-                      'of "form-data".', link)
-
-        elif not part.name:
-            self.fail('Each part of a multipart/form-data requires a '
-                      'Content-Disposition header with a unique "name" '
-                      'parameter.', link)
-
+                      'of "form-data" AND a unique "name" parameter.', link)
         elif part.type.lower() not in mimetypes:
             allowed = ', '.join(mimetypes)
             self.fail('Invalid upload Content-Type. Each part of the '
                       'multipart/form-data upload MUST be one of: %s. '
-                      '%s is not allowed. See RFC 2388 on how to properly '
-                      'set it.' % (allowed, part.type), link)
+                      '%s is not allowed.' % (allowed, part.type), link)
 
     def _parse_part(self, part, mimetypes):
         """ Validate each part of the multipart per RFC 2388 ""
@@ -144,7 +134,7 @@ class Deserializer(BaseDeserializer):
         link = 'tools.ietf.org/html/rfc2388'
         parts = cgi.FieldStorage(
             fp=self.req.stream,
-            environ=self.req.env
+            environ=self.req.env,
         )
 
         if not parts:
@@ -155,9 +145,6 @@ class Deserializer(BaseDeserializer):
             self.fail('Currently, only 1 upload at a time is allowed. Please '
                       'break up your request into %s individual requests & '
                       'retry' % len(parts), link)
-
-        for part in parts:
-            part = parts[part]
-            self._parse_part(part, mimetypes)
-
-        return parts
+        else:
+            self._parse_part(parts.list[0], mimetypes)
+            return parts
