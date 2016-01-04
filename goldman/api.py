@@ -57,18 +57,18 @@ class API(falcon.API):
 
         The route or API endpoint will be automatically determined
         based on the resource object instance passed in.
+
+        INFO: Only our Model based resources are supported when
+              auto-generating API endpoints.
         """
 
         for resource in self.RESOURCES:
             if isinstance(resource, goldman.ModelsResource):
                 route = '/%s' % resource.rtype
-
             elif isinstance(resource, goldman.ModelResource):
                 route = '/%s/{rid}' % resource.rtype
-
             elif isinstance(resource, goldman.RelatedResource):
                 route = '/%s/{rid}/{related}' % resource.rtype
-
             else:
                 raise TypeError('unsupported resource type')
 
@@ -80,16 +80,21 @@ class API(falcon.API):
         A class constant of ROUTES is expected containing
         an array of tuples in the following format:
 
+
             ROUTES = [
                 ('/<endpoint>', <resource instance>)
             ]
 
-        a real life example would look like:
+
+        A real life example with meaningful endpoints & resource
+        instances would look like:
+
 
             ROUTES = [
                 ('/logins', goldman.ModelsResource(LoginModel)),
                 ('/logins/{rid}', goldman.ModelResource(LoginModel)),
             ]
+
 
         This is the same format the native falcon `add_route`
         method wants the routes.
@@ -102,11 +107,14 @@ class API(falcon.API):
     def _error_serializer(req, resp, exc):  # pylint: disable=unused-argument
         """ Serializer for native falcon HTTPError exceptions.
 
-        We override the default serializer with our own so we can
-        ensure the errors are serialized in a JSON API compliant format.
+        We override the default serializer with our own so we
+        can ensure the errors are serialized in a JSON API
+        compliant format.
 
-        Surprisingly, most falcon error attributes map directly to
-        the JSON API spec. The few that don't can be mapped accordingly:
+        Surprisingly, most falcon error attributes map directly
+        to the JSON API spec. The few that don't can be mapped
+        accordingly:
+
 
             HTTPError                     JSON API
             ~~~~~~~~~                     ~~~~~~~~
@@ -114,21 +122,20 @@ class API(falcon.API):
             error['description']    ->   error['detail']
             error['link']['href']   ->   error['link']['about']
 
-        Per the falcon docs this function should return a tuple of
 
-            (MIMETYPE, BODY PAYLOAD)
+        Per the falcon docs this function should return a tuple
+        of: (MIMETYPE, BODY PAYLOAD)
         """
 
         error = exc.to_dict()
+        error['detail'] = error.pop('description', 'Unknown Error')
 
-        if 'description' in error:
-            error['detail'] = error.pop('description')
+        try:
+            error['link'] = {'about': error['link']['href']}
+        except KeyError:
+            error['link'] = {'about': ''}
 
-        if 'link' in error:
-            error['link'] = {
-                'about': error['link']['href']
-            }
-
-        error = json.dumps({'errors': [error]})
-
-        return (goldman.config.JSONAPI_MIMETYPE, error)
+        return (
+            goldman.config.JSONAPI_MIMETYPE,
+            json.dumps({'errors': [error]}),
+        )
