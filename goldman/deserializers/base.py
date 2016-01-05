@@ -2,7 +2,12 @@
     deserializers.base
     ~~~~~~~~~~~~~~~~~~
 
-    Our base deserializer.
+    Our base deserializer to be inherited by all other
+    deserializers.
+
+    Each deserializer that sub-classes this object should
+    set a class constant of MIMETYPE so the deserializer is
+    auto-selected during content negotiation.
 """
 
 import goldman.exceptions as exceptions
@@ -32,7 +37,13 @@ class Deserializer(object):
 
     @staticmethod
     def fail(detail, link):
-        """ Convenience function aborting on non-compliant request bodies """
+        """ Convenience method aborting on non-compliant request bodies
+
+        Call this method with a string description of the reason
+        for the error & a URL. The URL is typically a section in
+        an online specification citing the proper way to construct
+        the request body
+        """
 
         abort(exceptions.InvalidRequestBody(**{
             'detail': detail,
