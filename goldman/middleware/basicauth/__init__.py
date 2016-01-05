@@ -11,6 +11,7 @@ import goldman.exceptions as exceptions
 import goldman.signals as signals
 
 from goldman.utils.error_helpers import abort
+from goldman.utils.str_helpers import naked
 from base64 import b64decode
 
 
@@ -35,7 +36,7 @@ class Middleware(object):
     def _realm(self):
         """ Return a string representation of the authentication realm """
 
-        return 'Basic realm="{}"'.format(goldman.config.AUTH_REALM)
+        return 'Basic realm="%s"' % goldman.config.AUTH_REALM
 
     @staticmethod
     def _get_creds(req):
@@ -45,15 +46,15 @@ class Middleware(object):
         separated & base64 encoded. They will come after the scheme
         is declared.
 
-        :return: tuple (username, password) or None, None
+        :return:
+            tuple (username, password) or None
         """
 
         try:
-            creds = req.auth.split(' ')[1].strip()
-            creds = b64decode(creds)
-            return creds.split(':')
+            creds = naked(req.auth.split(' ')[1])
+            return b64decode(creds).split(':')
         except (AttributeError, IndexError, TypeError, ValueError):
-            return None, None
+            return None
 
     def get_creds(self, req):
         """ Validate the Authorization header per RFC guidelines """
@@ -76,8 +77,9 @@ class Middleware(object):
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             }))
 
-        username, password = self.get_creds(req)
-        if not username or not password:
+        try:
+            return self.get_creds(req)
+        except ValueError:
             abort(exceptions.InvalidAuthSyntax(**{
                 'detail': 'The username & password could not be discovered '
                           'in the provided Authorization header. It appears '
@@ -86,8 +88,6 @@ class Middleware(object):
                 'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             }))
-
-        return username, password
 
     def process_request(self, req, resp):  # pylint: disable=unused-argument
         """ Process the request before routing it.
@@ -109,5 +109,4 @@ class Middleware(object):
             }))
         else:
             goldman.sess.login = auth_code
-
-        signals.post_authenticate.send()
+            signals.post_authenticate.send()
