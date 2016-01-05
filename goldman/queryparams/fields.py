@@ -51,20 +51,21 @@ def _validate_param(rtype, fields):
     """ Ensure the sparse fields exists on the models """
 
     try:
+        # raises ValueError if not found
         model = rtype_to_model(rtype)
         model_fields = model.all_fields
-    except AttributeError:
+    except ValueError:
         abort(exceptions.InvalidQueryParams(**{
-            'detail': 'The sparse field query parameter you provided '
-                      'with a field type of {} is unknown'.format(rtype),
+            'detail': 'The sparse field query parameter provided with '
+                      'a field type of "{}" is unknown'.format(rtype),
             'parameter': 'fields',
         }))
 
     for field in fields:
         if field not in model_fields:
             abort(exceptions.InvalidQueryParams(**{
-                'detail': 'The sparse field type of {} does not have '
-                          'a field name of {}'.format(rtype, field),
+                'detail': 'The sparse field type of "{}" does not have '
+                          'a field name of "{}"'.format(rtype, field),
                 'parameter': 'fields',
             }))
 

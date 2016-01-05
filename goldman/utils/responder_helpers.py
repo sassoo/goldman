@@ -241,6 +241,7 @@ def _to_rest(model, includes=None):
     expecting.
     """
 
+    includes = includes or []
     sparse = goldman.sess.req.fields.get(model.rtype, [])
 
     if sparse:
