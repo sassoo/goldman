@@ -4,6 +4,15 @@
 
     Basic authentication implementation as documented briefly
     in RFC 7231 but more completely in RFC 2617 & 7235
+
+    The middleware requires a callable to be passed in as the
+    auth_creds property which will be given a username &
+    password. The callable should return a login model of
+    successfully authenticated user. Returning a string will
+    be interpreted as an error.
+
+    The model will be assigned to the goldman.sess.login
+    propery.
 """
 
 import goldman
@@ -18,9 +27,9 @@ from base64 import b64decode
 class Middleware(object):
     """ Ensure RFC compliance & authenticate the user. """
 
-    def __init__(self, validate_creds):
+    def __init__(self, auth_creds):
 
-        self.validate_creds = validate_creds
+        self.auth_creds = auth_creds
 
     @property
     def _error_headers(self):
@@ -90,17 +99,12 @@ class Middleware(object):
             }))
 
     def process_request(self, req, resp):  # pylint: disable=unused-argument
-        """ Process the request before routing it.
-
-        If authentication succeeds then the thread local instance
-        will have a login property updated with a value of the
-        login model from the database.
-        """
+        """ Process the request before routing it. """
 
         signals.pre_authenticate.send()
 
         username, password = self.get_creds(req)
-        auth_code = self.validate_creds(username, password)
+        auth_code = self.auth_creds(username, password)
 
         if isinstance(auth_code, str):
             abort(exceptions.AuthRejected(**{
