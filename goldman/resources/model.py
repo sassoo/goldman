@@ -79,7 +79,7 @@ class Resource(BaseResource):
     """ Single item resource & responders """
 
     DESERIALIZERS = [
-        goldman.JSONAPIDeserializer,
+        goldman.JsonApiDeserializer,
     ]
 
     SERIALIZERS = [

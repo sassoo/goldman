@@ -6,20 +6,20 @@
 """
 
 from ..deserializers.base import Deserializer as BaseDeserializer
-from ..deserializers.comma_sep import Deserializer as CSVDeserializer
+from ..deserializers.comma_sep import Deserializer as CsvDeserializer
 from ..deserializers.form_data import Deserializer as FormDataDeserializer
 from ..deserializers.form_urlencoded import (
     Deserializer as FormUrlEncodedDeserializer
 )
-from ..deserializers.json_7159 import Deserializer as JSONDeserializer
-from ..deserializers.jsonapi import Deserializer as JSONAPIDeserializer
+from ..deserializers.json_7159 import Deserializer as JsonDeserializer
+from ..deserializers.jsonapi import Deserializer as JsonApiDeserializer
 
 
 DESERIALIZERS = [
     BaseDeserializer,
-    CSVDeserializer,
+    CsvDeserializer,
     FormDataDeserializer,
     FormUrlEncodedDeserializer,
-    JSONDeserializer,
-    JSONAPIDeserializer,
+    JsonDeserializer,
+    JsonApiDeserializer,
 ]

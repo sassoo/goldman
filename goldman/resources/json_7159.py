@@ -14,7 +14,7 @@ class Resource(BaseResource):
     """ Base JSON resource """
 
     DESERIALIZERS = [
-        goldman.JSONDeserializer,
+        goldman.JsonDeserializer,
     ]
 
     SERIALIZERS = [
