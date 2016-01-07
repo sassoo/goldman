@@ -5,6 +5,11 @@
     Basic authentication implementation as documented briefly
     in RFC 7231 but more completely in RFC 2617 & 7235
 
+        Per RFC 2617 section 2 an Authorization header in the
+        request containing a base64 encoded, colon separated,
+        username & password. It will come after the scheme
+        is declared which is a string of "Basic".
+
     The middleware requires a callable to be passed in as the
     `auth_creds` property which will be given a username &
     password.
@@ -14,7 +19,7 @@
     as an error causing the request to be aborted IF the
     middleware's `optional` property is set to False (default).
 
-    The model will be assigned to the goldman.sess.login
+    The model will be assigned to the `goldman.sess.login`
     propery if authentication succeeds.
 """
 
@@ -82,10 +87,6 @@ class Middleware(object):
 
     def _get_creds(self, req):
         """ Get the username & password from the Authorization header
-
-        Per RFC 2617 section 2 the username & password are colon
-        separated & base64 encoded. They will come after the scheme
-        is declared which is a string of "Basic".
 
         If the header is actually malformed where Basic Auth was
         indicated by the request then an InvalidAuthSyntax exception

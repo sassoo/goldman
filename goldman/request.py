@@ -47,6 +47,8 @@ class Request(FalconRequest):
 
         It is expected to be the first string in a space separated
         list & will always be returned lowercase.
+
+        :return: str or None
         """
 
         try:

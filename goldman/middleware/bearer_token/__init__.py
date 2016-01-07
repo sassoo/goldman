@@ -3,43 +3,67 @@
     ~~~~~~~~~~~~~~~~~~~~~~~
 
     OAuth 2.0 Authorization Framework: Bearer Token Usage
-    implementation as documented in RFC-6750.
+    implementation as documented in RFC 6750.
 
-    Specifically, the middleware supports only section 2.1
-    of the spec where the Bearer token is passed by the
-    client via the Authorization header.
+        Specifically, the middleware supports ONLY section
+        2.1 of RFC 6750; an Authorization header in the
+        request containing an unencoded token. It will
+        come after the scheme is declared which is a string
+        of "Bearer".
 
     This middleware requires a callable to be passed in as
-    the auth_token property which will be given the token.
+    the `auth_token` property which will be given the token.
+
     The callable should return a model representing the logged
-    in user. The model will be assigned to the goldman.sess.login
-    property.
+    in user. Returning a string will be interpreted as an
+    error causing the request to be aborted IF the middleware's
+    `optional` property is set to False (default).
 
-    Returning a string will be interpreted as an error &
-    a RFC 6750 compliant error response will be sent with
-    the error message as the error_description field in
-    the response.
+    The model will be assigned to the `goldman.sess.login`
+    propery if authentication succeeds.
 
-    NOTE: As documented in RFC 6750 error conditions are
-          handled in section 3.1 & any human readable
-          information of the error condition are passed
-          in the WWW-Authenticate header.
+    NOTE: As documented in RFC 6750 on certain errors the
+          the registered error code & description is passed
+          in the WWW-Authenticate header. BUT ONLY SOMETIMES.
+
+          The spec makes it clear that a response SHOULD
+          NOT include the error info in the header if
+          either no Authorization header is present or the
+          wrong "scheme" is used.
+
+          This ambiguity sucks for our clients & since the
+          spec gives no guidance on a payload containing
+          errors we ALWAYS include one in addition to
+          following the  section 3.1 nonsense.
+
+    WARN: auth will be completely bypassed if the token_endpoint
+          or revoke_endpoint is being accessed.
+
+          This is so they can complete when a bearer token
+          is not known or passed in differently.. don't
+          forget the OAuth access_token resource!
 """
 
-import falcon
 import goldman
 import goldman.signals as signals
 
-from falcon.http_status import HTTPStatus
+from goldman.exceptions import (
+    AuthRejected,
+    AuthRequired,
+    InvalidAuthSyntax,
+)
+from goldman.utils.error_helpers import abort
+from goldman.utils.str_helpers import naked
 
 
 class Middleware(object):
     """ Ensure RFC compliance & authenticate the token. """
 
-    def __init__(self, auth_token, revoke_endpoint='/revoke',
+    def __init__(self, auth_token, optional=False, revoke_endpoint='/revoke',
                  token_endpoint='/token'):
 
         self.auth_token = auth_token
+        self.optional = optional
         self.revoke_endpoint = revoke_endpoint
         self.token_endpoint = token_endpoint
 
@@ -57,78 +81,119 @@ class Middleware(object):
     def _realm(self):
         """ Return a string representation of the authentication realm """
 
-        return 'Bearer realm="{}"'.format(goldman.config.AUTH_REALM)
+        return 'Bearer realm="%s"' % goldman.config.AUTH_REALM
 
-    @staticmethod
-    def _get_token(req):
-        """ Return the access_token from the request
+    def _get_invalid_token_headers(self, desc):
+        """ Return our default error headers with section 3.1 headers
 
-        It will come after the schema is declared.
-
-        :return: str or None
+        Specifically, the "invalid_token" error code in section 3.1
         """
-
-        try:
-            return req.auth.split(' ')[1].strip()
-        except (AttributeError, IndexError):
-            return None
-
-    def abort_invalid_token(self, desc):
-        """ Abort according to section 3.1 "invalid_token" of RFC 6750 """
 
         headers = self._error_headers
         headers['WWW-Authenticate'] += ', error="invalid_token", ' \
                                        'error_description="%s"' % desc
 
-        raise HTTPStatus(falcon.HTTP_401, headers)
+        return headers
 
-    def get_token(self, req):
-        """ Validate the Authorization header per RFC guidelines """
+    def _validate_auth_scheme(self, req):
+        """ Check if the request has auth & the proper scheme
 
-        token = self._get_token(req)
+        Remember NOT to include the error related info in
+        the WWW-Authenticate header for these conditions.
 
-        if not token:
-            desc = 'The Authorization header in your request is ' \
-                   'malformed. It is missing the required access_token ' \
-                   'as documented in RFC 6750. Please alter your ' \
-                   'header & retry.'
+        :raise:
+            AuthRequired
+        """
 
-            self.abort_invalid_token(desc)
+        if not req.auth:
+            raise AuthRequired(**{
+                'detail': 'You must first login to access the requested '
+                          'resource(s). Please retry your request using '
+                          'OAuth 2.0 Bearer Token Authentication as '
+                          'documented in RFC 6750. If you do not have an '
+                          'access_token then request one at the token '
+                          'endpdoint of: %s' % self.token_endpoint,
+                'headers': self._error_headers,
+                'links': 'tools.ietf.org/html/rfc6750#section-2.1',
+            })
+        elif req.auth_scheme != 'bearer':
+            raise AuthRequired(**{
+                'detail': 'Your Authorization header is using an unsupported '
+                          'authentication scheme. Please modify your scheme '
+                          'to be a string of: "Bearer".',
+                'headers': self._error_headers,
+                'links': 'tools.ietf.org/html/rfc6750#section-2.1',
+            })
 
-        return token
+    def _get_token(self, req):
+        """ Get the token from the Authorization header
+
+        If the header is actually malformed where Bearer Auth was
+        indicated by the request then an InvalidAuthSyntax exception
+        is raised. Otherwise an AuthRequired exception since it's
+        unclear in this scenario if the requestor was even aware
+        Authentication was required & if so which "scheme".
+
+        Calls _validate_auth_scheme first & bubbles up it's
+        exceptions.
+
+        :return:
+            string token
+        :raise:
+            AuthRequired, InvalidAuthSyntax
+        """
+
+        self._validate_auth_scheme(req)
+
+        try:
+            return naked(req.auth.split(' ')[1])
+        except IndexError:
+            desc = 'You are using the Bearer Authentication scheme as ' \
+                   'required to login but your Authorization header is ' \
+                   'completely missing the access_token.'
+
+            raise InvalidAuthSyntax(**{
+                'detail': desc,
+                'headers': self._get_invalid_token_headers(desc),
+                'links': 'tools.ietf.org/html/rfc6750#section-2.1',
+            })
+
+    def _get_auth_code(self, token):
+        """ Return the return code from the auth_token callback
+
+        If authentication fails (callback returns a string) then
+        an AuthRejected exception is raised.
+
+        :token:
+            string token
+        :raise:
+            AuthRejected
+        """
+
+        auth_code = self.auth_token(token)
+
+        if isinstance(auth_code, str):
+            raise AuthRejected(**{
+                'detail': auth_code,
+                'headers': self._get_invalid_token_headers(auth_code),
+            })
+        else:
+            return auth_code
 
     def process_request(self, req, resp):  # pylint: disable=unused-argument
-        """ Process the request before routing it.
-
-        If authentication succeeds then the thread local instance
-        will have a login property updated with a value of the
-        login model from the database.
-
-        NOTE: all the logic in this middleware will be completely
-              bypassed if the token_endpoint or revoke_endpoint
-              is being accessed.
-
-              This is so they can complete when a bearer token
-              is not known or passed in differently.
-        """
+        """ Process the request before routing it. """
 
         if req.path in (self.revoke_endpoint, self.token_endpoint):
             return
 
         signals.pre_authenticate.send()
 
-        # per section 2.1 near the end these conditions SHOULD
-        # NOT report back any other error information. That's
-        # very very stupid.
-        if not req.auth or req.auth_scheme != 'bearer':
-            raise HTTPStatus(falcon.HTTP_401, self._error_headers)
-
-        token = self.get_token(req)
-        auth_code = self.auth_token(token)
-
-        if isinstance(auth_code, str):
-            self.abort_invalid_token(auth_code)
+        try:
+            token = self._get_token(req)
+            auth_code = self._get_auth_code(token)
+        except (AuthRejected, AuthRequired, InvalidAuthSyntax) as exc:
+            if not self.optional:
+                abort(exc)
         else:
             goldman.sess.login = auth_code
-
-        signals.post_authenticate.send()
+            signals.post_authenticate.send()
