@@ -16,25 +16,26 @@ import goldman.exceptions as exceptions
 from goldman.utils.error_helpers import abort
 
 
-def _get_deserializer(mimetype):
-    """ Return a deserializer based on the mimetype
-
-    If a deserializer can't be determined by the mimetype then
-    return None.
-
-    :param mimetype: string mimetype
-    :return: deserializer class object or None
-    """
-
-    for deserializer in goldman.DESERIALIZERS:
-        if mimetype == deserializer.MIMETYPE:
-            return deserializer
-
-    return None
-
-
 class Middleware(object):
     """ Deserializer middleware object """
+
+    @staticmethod
+    def _get_deserializer(mimetype):
+        """ Return a deserializer based on the mimetype
+
+        If a deserializer can't be determined by the mimetype then
+        return None.
+
+        :param mimetype:
+            string mimetype
+        :return:
+            deserializer class object or None
+        """
+
+        for deserializer in goldman.DESERIALIZERS:
+            if mimetype == deserializer.MIMETYPE:
+                return deserializer
+        return None
 
     # pylint: disable=unused-argument
     def process_resource(self, req, resp, resource):
@@ -49,12 +50,10 @@ class Middleware(object):
         if req.content_required and resource:
             allowed = resource.deserializer_mimetypes
 
-            if not req.content_type or req.content_type not in allowed:
-                abort(exceptions.ContentTypeUnsupported(allowed))
-            else:
-                deserializer = _get_deserializer(req.content_type)
-
             if req.content_length in (None, 0):
                 abort(exceptions.EmptyRequestBody)
+            elif req.content_type not in allowed:
+                abort(exceptions.ContentTypeUnsupported(allowed))
             else:
+                deserializer = self._get_deserializer(req.content_type)
                 req.deserializer = deserializer(req, resp)

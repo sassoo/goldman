@@ -34,10 +34,10 @@
           This ambiguity sucks for our clients & since the
           spec gives no guidance on a payload containing
           errors we ALWAYS include one in addition to
-          following the  section 3.1 nonsense.
+          following the section 3.1 nonsense.
 
     WARN: auth will be completely bypassed if the token_endpoint
-          or revoke_endpoint is being accessed.
+          or revoke_endpoint are being accessed.
 
           This is so they can complete when a bearer token
           is not known or passed in differently.. don't
