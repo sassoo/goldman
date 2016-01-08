@@ -9,8 +9,8 @@
 """
 
 import goldman
-import goldman.exceptions as exceptions
 
+from goldman.exceptions import TLSRequired
 from goldman.utils.error_helpers import abort
 
 
@@ -25,7 +25,7 @@ class Middleware(object):
         """
 
         if goldman.config.TLS_REQUIRED and req.protocol != 'https':
-            abort(exceptions.TLSRequired)
+            abort(TLSRequired)
 
     def process_response(self, req, resp, resource):
         """ Post-processing of the response (after routing).

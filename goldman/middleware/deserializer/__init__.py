@@ -11,8 +11,11 @@
 """
 
 import goldman
-import goldman.exceptions as exceptions
 
+from goldman.exceptions import (
+    EmptyRequestBody,
+    ContentTypeUnsupported,
+)
 from goldman.utils.error_helpers import abort
 
 
@@ -51,9 +54,9 @@ class Middleware(object):
             allowed = resource.deserializer_mimetypes
 
             if req.content_length in (None, 0):
-                abort(exceptions.EmptyRequestBody)
+                abort(EmptyRequestBody)
             elif req.content_type not in allowed:
-                abort(exceptions.ContentTypeUnsupported(allowed))
+                abort(ContentTypeUnsupported(allowed))
             else:
                 deserializer = self._get_deserializer(req.content_type)
                 req.deserializer = deserializer(req, resp)

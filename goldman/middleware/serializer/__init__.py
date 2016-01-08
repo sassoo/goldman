@@ -11,8 +11,8 @@
 """
 
 import goldman
-import goldman.exceptions as exceptions
 
+from goldman.exceptions import RequestNotAcceptable
 from goldman.utils.error_helpers import abort
 
 
@@ -49,7 +49,7 @@ class Middleware(object):
             preferred = req.client_prefers(allowed)
 
             if not preferred:
-                abort(exceptions.RequestNotAcceptable(allowed))
+                abort(RequestNotAcceptable(allowed))
             else:
-                serializer = _get_serializer(preferred)
+                serializer = self._get_serializer(preferred)
                 resp.serializer = serializer(req, resp)

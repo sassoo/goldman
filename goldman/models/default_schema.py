@@ -10,8 +10,7 @@
         * each model has timestamp fields for create / update
 
     It will also use the goldman BaseModel as is required on
-    all models using a goldman store, thus it assumes a store
-    is in use.
+    all models if using a goldman store.
 """
 
 import goldman
@@ -27,8 +26,8 @@ class Model(BaseModel):
     """ Model with some common schematics types """
 
     creator = ToOneType(
-        rtype='logins',
         from_rest=False,
+        rtype='logins',
         skip_exists=True,
     )
 
@@ -45,7 +44,8 @@ class Model(BaseModel):
 def pre_create(sender, model):
     """ Callback before creating any new model
 
-    Generate a new UUID rid & set the created timestamp.
+    Identify the creator of the new model & set the
+    created timestamp to now.
     """
 
     model.created = dt.utcnow()
@@ -55,8 +55,7 @@ def pre_create(sender, model):
 def pre_save(sender, model):
     """ Callback before saving any model
 
-    Update the updated timestamp & ensure no fields have
-    been modified that aren't allowed to be modified.
+    Update the updated timestamp to now.
     """
 
     model.updated = dt.utcnow()
