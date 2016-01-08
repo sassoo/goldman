@@ -60,12 +60,18 @@ class Middleware(object):
         against assholes doing asshole'ish stuff. 0.01% of
         the time it's a bug.
 
-        Content Length Header
-        ~~~~~~~~~~~~~~~~~~~~~
+        Message Body Length
+        ~~~~~~~~~~~~~~~~~~~
 
-        Per the spec it should be present when required &
-        MUST be >= 0. If the Transfer-Encoding header is
-        present then it isn't required however.
+        RFC 7230 section 3.3.3 has everything you really need
+        to know. Per the spec a Content-Length header & a
+        Transfer-Encoding header are mutaully exclusive & if
+        neither are provided then return a 411 indicating a
+        Content-Length header is required.
+
+        NOTE: falcon already raises an exception for invalid
+              Content-Length values so we don't need to type
+              check it.
         """
 
         max_length = goldman.config.MAX_URI_LENGTH
@@ -79,14 +85,18 @@ class Middleware(object):
             has_content_length = req.content_length is not None
             transfer_encoding = req.get_header('transfer-encoding')
 
-            # According to RFC 7230 section 3.3.2 this is a
-            # MUST NOT & we should error but most libs don't
-            # follow - booh, hiss, wahhh
             if has_content_length and transfer_encoding:
+                abort(exceptions.InvalidRequestHeader(**{
+                    'detail': 'Your request has both Transfer-Encoding & '
+                              'Content-Length headers which is a violation '
+                              'of RFC 7230. This is likely a bug in your '
+                              'client & your request cannot proceed as is.',
+                    'links': 'tools.ietf.org/html/rfc7230#section-3.3.3',
+
+                }))
+            elif transfer_encoding:
                 pass
-            elif not has_content_length and not transfer_encoding:
-                abort(exceptions.ContentLengthRequired)
-            elif req.content_length < 0:
+            elif not has_content_length:
                 abort(exceptions.ContentLengthRequired)
 
     def process_response(self, req, resp, resource):

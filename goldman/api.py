@@ -103,8 +103,9 @@ class API(falcon.API):
         for route in self.ROUTES:
             self.add_route(*route)
 
+    # XXX FIX: API changed in falcon 0.4.0
     @staticmethod
-    def _error_serializer(req, resp, exc):  # pylint: disable=unused-argument
+    def _error_serializer(req, exc):  # pylint: disable=unused-argument
         """ Serializer for native falcon HTTPError exceptions.
 
         We override the default serializer with our own so we
@@ -116,23 +117,26 @@ class API(falcon.API):
         accordingly:
 
 
-            HTTPError                     JSON API
-            ~~~~~~~~~                     ~~~~~~~~
+            HTTPError                 JSON API
+            ~~~~~~~~~                 ~~~~~~~~
 
-            error['description']    ->   error['detail']
-            error['link']['href']   ->   error['link']['about']
+            exc.description      ->   error['detail']
+            error.link['href']   ->   error['link']['about']
 
 
         Per the falcon docs this function should return a tuple
-        of: (MIMETYPE, BODY PAYLOAD)
+        of (MIMETYPE, BODY PAYLOAD)
         """
 
-        error = exc.to_dict()
-        error['detail'] = error.pop('description', 'Unknown Error')
+        error = {
+            'detail': exc.description,
+            'title': exc.title,
+            'status': exc.status,
+        }
 
         try:
-            error['link'] = {'about': error['link']['href']}
-        except KeyError:
+            error['link'] = {'about': exc.link['href']}
+        except (TypeError, KeyError):
             error['link'] = {'about': ''}
 
         return (
