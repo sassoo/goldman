@@ -7,6 +7,14 @@
     those directly called out by the JSON API specification but
     do not require the JSON API (de)serializer.
 
+
+    NOTE: Query param processing will NOT occur on resources
+          without a model property containing a goldman model
+          class object. The model is needed so proper vetting
+          of the query params can occur against the models
+          attributes.
+
+
     The request object will have it's attributes updated with
     the coerced query parameter values. The attribute names are
     the pluralized version of the query params themselves.
