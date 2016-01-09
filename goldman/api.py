@@ -117,11 +117,11 @@ class API(falcon.API):
         accordingly:
 
 
-            HTTPError                 JSON API
-            ~~~~~~~~~                 ~~~~~~~~
+            HTTPError               JSON API
+            ~~~~~~~~~               ~~~~~~~~
 
-            exc.description      ->   error['detail']
-            error.link['href']   ->   error['link']['about']
+            exc.description    ->   error['detail']
+            exc.link['href']   ->   error['link']['about']
 
 
         Per the falcon docs this function should return a tuple

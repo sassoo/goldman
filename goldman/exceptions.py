@@ -35,6 +35,13 @@ class APIException(Exception):
         else:
             return self.data[key]
 
+    def __setattr__(self, name, value):
+
+        if name == 'data':
+            super(APIException, self).__setattr__(name, value)
+        else:
+            self.data[name] = value
+
     def to_dict(self):
         """ Convenience function to get the exception as a dict """
 

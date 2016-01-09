@@ -92,7 +92,6 @@ class Middleware(object):
                               'of RFC 7230. This is likely a bug in your '
                               'client & your request cannot proceed as is.',
                     'links': 'tools.ietf.org/html/rfc7230#section-3.3.3',
-
                 }))
             elif transfer_encoding:
                 pass
