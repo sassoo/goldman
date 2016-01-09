@@ -10,6 +10,7 @@ import goldman.signals as signals
 
 from ..models.default_schema import Model as DefaultSchemaModel
 from datetime import datetime as dt
+from goldman.exceptions import AuthRejected
 from goldman.utils.str_helpers import (
     cmp_val_salt_hash,
     gen_salt_and_hash,
@@ -62,22 +63,32 @@ class Model(DefaultSchemaModel):
 
     @classmethod
     def auth_creds(cls, username, password):
-        """ Callback method for OAuth 2.0 ROPC resource """
+        """ Callback method for Basic Authentication """
 
         store = goldman.sess.store
         login = store.find(cls.RTYPE, 'username', username)
 
         if not login:
-            return 'No login found by that username. Spelling error?'
+            msg = 'No login found by that username. Spelling error?'
+            raise AuthRejected(**{'detail': msg})
         elif login.locked:
-            return 'The login account is currently locked out.'
+            msg = 'The login account is currently locked out.'
+            raise AuthRejected(**{'detail': msg})
         elif not cmp_val_salt_hash(password, login.salt, login.password):
-            return 'The password provided is incorrect. Spelling error?'
-        elif login.token:
-            return login, login.token
+            msg = 'The password provided is incorrect. Spelling error?'
+            raise AuthRejected(**{'detail': msg})
         else:
+            return login
+
+    @classmethod
+    def auth_creds_token(cls, username, password):
+        """ Callback method for OAuth 2.0 ROPC resource """
+
+        login = cls.auth_creds(username, password)
+
+        if not login.token:
             login.token = random_str()
-            return login, login.token
+        return login, login.token
 
     @classmethod
     def auth_token(cls, token):
@@ -87,9 +98,11 @@ class Model(DefaultSchemaModel):
         login = store.find(cls.RTYPE, 'token', token)
 
         if not login:
-            return 'No login found with that token. It may have been revoked.'
+            msg = 'No login found with that token. It may have been revoked.'
+            raise AuthRejected(**{'detail': msg})
         elif login.locked:
-            return 'The login account is currently locked out.'
+            msg = 'The login account is currently locked out.'
+            raise AuthRejected(**{'detail': msg})
         else:
             return login
 
@@ -122,8 +135,7 @@ def pre_create(sender, model):
     """
 
     if not model.password:
-        model.locked = True
-        model.salt, model.password = gen_salt_and_hash()
+        model.locked, model.password = True, random_str()
 
 
 def pre_save(sender, model):
@@ -134,7 +146,7 @@ def pre_save(sender, model):
 
 
 def post_authenticate(sender):
-    """ Update the login_date timestamp & persist new API tokens.
+    """ Update the login_date timestamp
 
     The login_date update will be debounced so writes don't
     occur on every hit of the the API. If the login_date
@@ -144,13 +156,14 @@ def post_authenticate(sender):
     login = goldman.sess.login
     now = dt.now()
 
-    if login.login_date:
+    if not login.login_date:
+        login.login_date = now
+    else:
         sec_since_updated = (now - login.login_date).seconds
         min_since_updated = sec_since_updated / 60
 
-    # update if not set (first login) or exceeds time
-    if not login.login_date or min_since_updated > 15:
-        login.login_date = now
+        if min_since_updated > 15:
+            login.login_date = now
 
     if login.dirty:
         store = goldman.sess.store

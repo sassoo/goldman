@@ -15,9 +15,9 @@
     password.
 
     The callable should return a login model of the successfully
-    authenticated user. Returning a string will be interpreted
-    as an error causing the request to be aborted IF the
-    middleware's `optional` property is set to False (default).
+    authenticated user or raise an `AuthRejected` exception
+    causing the request to be aborted IF the middleware's
+    `optional` property is set to False (default).
 
     The model will be assigned to the `goldman.sess.login`
     propery if authentication succeeds.
@@ -73,7 +73,6 @@ class Middleware(object):
                           'resource(s). Please retry your request using '
                           'Basic Authentication as documented in RFC 2617 '
                           '& available in most HTTP client libraries.',
-                'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             })
         elif req.auth_scheme != 'basic':
@@ -81,7 +80,6 @@ class Middleware(object):
                 'detail': 'Your Authorization header is using an unsupported '
                           'authentication scheme. Please modify your scheme '
                           'to be a string of: "Basic".',
-                'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             })
 
@@ -116,7 +114,6 @@ class Middleware(object):
                 'detail': 'You are using the Basic Authentication scheme as '
                           'required to login but your Authorization header is '
                           'completely missing the login credentials.',
-                'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             })
         except TypeError:
@@ -124,7 +121,6 @@ class Middleware(object):
                 'detail': 'Our API failed to base64 decode your Basic '
                           'Authentication login credentials in the '
                           'Authorization header. They seem to be malformed.',
-                'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             })
         except ValueError:
@@ -134,31 +130,8 @@ class Middleware(object):
                           'after decoding them. The username or password is '
                           'either missing or not separated by a ":" per the '
                           'spec. Either way the credentials are malformed.',
-                'headers': self._error_headers,
                 'links': 'tools.ietf.org/html/rfc2617#section-2',
             })
-
-    def _get_auth_code(self, creds):
-        """ Return the return code from the auth_creds callback
-
-        If authentication fails (callback returns a string) then
-        an AuthRejected exception is raised.
-
-        :creds:
-            tuple of username & password
-        :raise:
-            AuthRejected
-        """
-
-        auth_code = self.auth_creds(*creds)
-
-        if isinstance(auth_code, str):
-            raise AuthRejected(**{
-                'detail': auth_code,
-                'headers': self._error_headers,
-            })
-        else:
-            return auth_code
 
     def process_request(self, req, resp):  # pylint: disable=unused-argument
         """ Process the request before routing it. """
@@ -167,10 +140,9 @@ class Middleware(object):
 
         try:
             creds = self._get_creds(req)
-            auth_code = self._get_auth_code(creds)
+            goldman.sess.login = self.auth_creds(*creds)
+            signals.post_authenticate.send()
         except (AuthRejected, AuthRequired, InvalidAuthSyntax) as exc:
+            exc.headers = self._error_headers
             if not self.optional:
                 abort(exc)
-        else:
-            goldman.sess.login = auth_code
-            signals.post_authenticate.send()

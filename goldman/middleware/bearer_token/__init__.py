@@ -14,9 +14,9 @@
     This middleware requires a callable to be passed in as
     the `auth_token` property which will be given the token.
 
-    The callable should return a model representing the logged
-    in user. Returning a string will be interpreted as an
-    error causing the request to be aborted IF the middleware's
+    The callable should return a login model of the successfully
+    authenticated user or raise an `AuthRejected` exception
+    causing the request to be aborted IF the middleware's
     `optional` property is set to False (default).
 
     The model will be assigned to the `goldman.sess.login`
@@ -158,28 +158,6 @@ class Middleware(object):
                 'links': 'tools.ietf.org/html/rfc6750#section-2.1',
             })
 
-    def _get_auth_code(self, token):
-        """ Return the return code from the auth_token callback
-
-        If authentication fails (callback returns a string) then
-        an AuthRejected exception is raised.
-
-        :token:
-            string token
-        :raise:
-            AuthRejected
-        """
-
-        auth_code = self.auth_token(token)
-
-        if isinstance(auth_code, str):
-            raise AuthRejected(**{
-                'detail': auth_code,
-                'headers': self._get_invalid_token_headers(auth_code),
-            })
-        else:
-            return auth_code
-
     def process_request(self, req, resp):  # pylint: disable=unused-argument
         """ Process the request before routing it. """
 
@@ -190,10 +168,12 @@ class Middleware(object):
 
         try:
             token = self._get_token(req)
-            auth_code = self._get_auth_code(token)
-        except (AuthRejected, AuthRequired, InvalidAuthSyntax) as exc:
+            goldman.sess.login = self.auth_token(token)
+            signals.post_authenticate.send()
+        except (AuthRequired, InvalidAuthSyntax) as exc:
             if not self.optional:
                 abort(exc)
-        else:
-            goldman.sess.login = auth_code
-            signals.post_authenticate.send()
+        except AuthRejected as exc:
+            if not self.optional:
+                exc.headers = self._get_invalid_token_headers(exc.detail)
+                abort(exc)
