@@ -121,7 +121,7 @@ class API(falcon.API):
             ~~~~~~~~~               ~~~~~~~~
 
             exc.description    ->   error['detail']
-            exc.link['href']   ->   error['link']['about']
+            exc.link['href']   ->   error['links']['about']
 
 
         Per the falcon docs this function should return a tuple
@@ -135,9 +135,9 @@ class API(falcon.API):
         }
 
         try:
-            error['link'] = {'about': exc.link['href']}
+            error['links'] = {'about': exc.link['href']}
         except (TypeError, KeyError):
-            error['link'] = {'about': ''}
+            error['links'] = {'about': ''}
 
         return (
             goldman.config.JSONAPI_MIMETYPE,

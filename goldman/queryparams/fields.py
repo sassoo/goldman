@@ -17,6 +17,10 @@ from goldman.exceptions import InvalidQueryParams
 from goldman.utils.model_helpers import rtype_to_model
 
 
+LINK = 'jsonapi.org/format/#fetching-sparse-fieldsets'
+PARAM = 'fields'
+
+
 def _parse_param(key, val):
     """ Parse the query param looking for sparse fields params
 
@@ -57,7 +61,8 @@ def _validate_param(rtype, fields):
         raise InvalidQueryParams(**{
             'detail': 'The fields query param provided with a '
                       'field type of "%s" is unknown.' % rtype,
-            'parameter': 'fields',
+            'links': LINK,
+            'parameter': PARAM,
         })
 
     for field in fields:
@@ -66,7 +71,8 @@ def _validate_param(rtype, fields):
                 'detail': 'The fields query param "TYPE" of "%s" '
                           'is not possible. It does not have a field '
                           'by the name of "%s".' % (rtype, field),
-                'parameter': 'fields',
+                'links': LINK,
+                'parameter': PARAM,
             })
 
 
@@ -85,7 +91,8 @@ def _validate_req(req):
         raise InvalidQueryParams(**{
             'detail': 'The fields query param is only supported '
                       'with GET requests.',
-            'parameter': 'fields',
+            'links': LINK,
+            'parameter': PARAM,
         })
 
 

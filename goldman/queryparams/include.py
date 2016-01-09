@@ -11,6 +11,10 @@
 from goldman.exceptions import InvalidQueryParams
 
 
+LINK = 'jsonapi.org/format/#fetching-includes'
+PARAM = 'include'
+
+
 def _validate_no_nesting(param):
     """ Ensure the include field is not a nested relationship """
 
@@ -19,7 +23,8 @@ def _validate_no_nesting(param):
             'detail': 'The include query param of the "%s" field '
                       'is not supported. Nested relationship '
                       'inclusions are not currently supported' % param,
-            'parameter': 'include',
+            'links': LINK,
+            'parameter': PARAM,
         })
 
 
@@ -33,7 +38,8 @@ def _validate_rels(param, rels):
                       'relationship field & on the primary resource '
                       '& is not eligible for inclusion as a compound '
                       'document.' % param,
-            'parameter': 'include',
+            'links': LINK,
+            'parameter': PARAM,
         })
 
 

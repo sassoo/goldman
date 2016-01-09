@@ -2,18 +2,24 @@
     queryparams.page
     ~~~~~~~~~~~~~~~~
 
-    Paginate resources according to limit offset criteria.
+    Paginate resources according to limit offset criteria
+    according to.
 
-    Only two queryparams are supported for pagination:
+        jsonapi.org/format/#fetching-pagination
+
+    Only two query params are supported for pagination:
 
         page[limit]: number of resources to return
         page[offset]: number of resources to skip
 """
 
 import goldman
-import goldman.exceptions as exceptions
 
-from goldman.utils.error_helpers import abort
+from goldman.exceptions import InvalidQueryParams
+
+
+LINK = 'jsonapi.org/format/#fetching-pagination'
+PARAM = 'page'
 
 
 class Paginator(object):
@@ -23,7 +29,8 @@ class Paginator(object):
     pagination strategy.
 
     :param limit:
-        Integer value of resources to a result set to
+        Integer value of resources to limit a result
+        set to
     :param offet:
         Integer value of resources to skip
     """
@@ -46,11 +53,11 @@ class Paginator(object):
 
         name = self.__class__.__name__
 
-        return '{}({}, {})'.format(name, self.limit, self.offset)
+        return '%s(%s, %s)' % (name, self.limit, self.offset)
 
     def __str__(self):
 
-        return '{}, {}'.format(self.limit, self.offset)
+        return '%s, %s' % (self.limit, self.offset)
 
     @property
     def current(self):
@@ -76,7 +83,6 @@ class Paginator(object):
         else:
             offset = (self.total / self.limit) * self.limit
             limit = self.total - offset
-
             return 'page[offset]=%s&page[limit]=%s' % (offset, limit)
 
     @property
@@ -87,7 +93,6 @@ class Paginator(object):
             return self.last
         else:
             offset = self.offset + self.limit
-
             return 'page[offset]=%s&page[limit]=%s' % (offset, self.limit)
 
     @property
@@ -99,17 +104,19 @@ class Paginator(object):
                 return self.first
             else:
                 offset = self.offset - self.limit
-
                 return 'page[offset]=%s&page[limit]=%s' % (offset, self.limit)
 
     @staticmethod
     def _cast_page(val):
         """ Convert the page limit & offset into int's & type check """
 
-        if len(val) > 1 or int(val[0]) < 0:
+        try:
+            val = int(val)
+            if val < 0:
+                raise ValueError
+            return val
+        except (TypeError, ValueError):
             raise ValueError
-
-        return int(val[0])
 
 
 def init(req, model):  # pylint: disable=unused-argument
@@ -121,16 +128,16 @@ def init(req, model):  # pylint: disable=unused-argument
     :return: Paginator object
     """
 
-    limit = req.get_param_as_list('page[limit]') or [goldman.config.PAGE_LIMIT]
-    offset = req.get_param_as_list('page[offset]') or [0]
+    limit = req.get_param('page[limit]') or goldman.config.PAGE_LIMIT
+    offset = req.get_param('page[offset]') or 0
 
     try:
         return Paginator(limit, offset)
     except ValueError:
-        abort(exceptions.InvalidQueryParams(**{
+        raise InvalidQueryParams(**{
             'detail': 'The page[\'limit\'] & page[\'offset\'] query '
                       'params may only be specified once each & must '
                       'both be an integer >= 0.',
-            'link': 'jsonapi.org/format/#fetching-pagination',
+            'links': 'jsonapi.org/format/#fetching-pagination',
             'parameter': 'page',
-        }))
+        })
