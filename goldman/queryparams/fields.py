@@ -11,24 +11,23 @@
         jsonapi.org/examples/#sparse-fieldsets
 """
 
-import goldman.exceptions as exceptions
 import re
 
-from goldman.utils.error_helpers import abort
+from goldman.exceptions import InvalidQueryParams
 from goldman.utils.model_helpers import rtype_to_model
 
 
 def _parse_param(key, val):
     """ Parse the query param looking for sparse fields params
 
-    Ensure the val or what will become the sparse `fields`
+    Ensure the `val` or what will become the sparse fields
     is always an array. If the query param is not a sparse
     fields query param then return None.
 
     :param key:
-        The query parameter to the left of the equal sign
+        the query parameter key in the request (left of =)
     :param val:
-        The query parameter to the right of the equal sign
+        the query parameter val in the request (right of =)
     :return:
         tuple of resource type to implement the sparse
         fields on & a array of the fields.
@@ -55,19 +54,19 @@ def _validate_param(rtype, fields):
         model = rtype_to_model(rtype)
         model_fields = model.all_fields
     except ValueError:
-        abort(exceptions.InvalidQueryParams(**{
+        raise InvalidQueryParams(**{
             'detail': 'The sparse field query parameter provided with '
-                      'a field type of "{}" is unknown'.format(rtype),
+                      'a field type of "%s" is unknown' % rtype,
             'parameter': 'fields',
-        }))
+        })
 
     for field in fields:
         if field not in model_fields:
-            abort(exceptions.InvalidQueryParams(**{
-                'detail': 'The sparse field type of "{}" does not have '
-                          'a field name of "{}"'.format(rtype, field),
+            raise InvalidQueryParams(**{
+                'detail': 'The sparse field type of "%s" does not have '
+                          'a field name of "%s"' % (rtype, field),
                 'parameter': 'fields',
-            }))
+            })
 
 
 def _validate_req(req):
@@ -82,11 +81,11 @@ def _validate_req(req):
     """
 
     if not req.is_getting:
-        abort(exceptions.InvalidQueryParams(**{
+        raise InvalidQueryParams(**{
             'detail': 'Sparse field query parameters are only '
                       'supported with GET requests',
             'parameter': 'fields',
-        }))
+        })
 
 
 def init(req, model):  # pylint: disable=unused-argument
@@ -96,8 +95,6 @@ def init(req, model):  # pylint: disable=unused-argument
     the value is an array of string fields names to whitelist
     against.
 
-    :param req:
-        Falcon request object
     :return:
         dict
     """
@@ -107,14 +104,12 @@ def init(req, model):  # pylint: disable=unused-argument
     for key, val in req.params.items():
         try:
             rtype, fields = _parse_param(key, val)
-            params[rtype] = [field for field in fields]
+            params[rtype] = fields
         except TypeError:
             continue
 
     if params:
         _validate_req(req)
-
-    for rtype, fields in params.items():
-        _validate_param(rtype, fields)
-
+        for rtype, fields in params.items():
+            _validate_param(rtype, fields)
     return params

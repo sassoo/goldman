@@ -30,6 +30,9 @@ import goldman.queryparams.include as includes
 import goldman.queryparams.page as pages
 import goldman.queryparams.sort as sorts
 
+from goldman.utils.error_helpers import abort
+from goldman.exceptions import InvalidQueryParams
+
 
 class Middleware(object):
     """ Model query parameter middleware. """
@@ -39,10 +42,11 @@ class Middleware(object):
         """ Process the request after routing.
 
         The resource is required to determine if a model based
-        resource is being used for validations.
+        resource is being used for validations so skip
+        processing if no `resource.model` attribute is present.
         """
 
-        if hasattr(resource, 'model'):
+        try:
             model = resource.model
 
             req.fields = fields.init(req, model)
@@ -50,3 +54,7 @@ class Middleware(object):
             req.includes = includes.init(req, model)
             req.pages = pages.init(req, model)
             req.sorts = sorts.init(req, model)
+        except AttributeError:
+            pass
+        except InvalidQueryParams as exc:
+            abort(exc)
