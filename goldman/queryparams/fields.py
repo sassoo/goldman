@@ -55,16 +55,17 @@ def _validate_param(rtype, fields):
         model_fields = model.all_fields
     except ValueError:
         raise InvalidQueryParams(**{
-            'detail': 'The sparse field query parameter provided with '
-                      'a field type of "%s" is unknown' % rtype,
+            'detail': 'The fields query param provided with a '
+                      'field type of "%s" is unknown.' % rtype,
             'parameter': 'fields',
         })
 
     for field in fields:
         if field not in model_fields:
             raise InvalidQueryParams(**{
-                'detail': 'The sparse field type of "%s" does not have '
-                          'a field name of "%s"' % (rtype, field),
+                'detail': 'The fields query param "TYPE" of "%s" '
+                          'is not possible. It does not have a field '
+                          'by the name of "%s".' % (rtype, field),
                 'parameter': 'fields',
             })
 
@@ -82,8 +83,8 @@ def _validate_req(req):
 
     if not req.is_getting:
         raise InvalidQueryParams(**{
-            'detail': 'Sparse field query parameters are only '
-                      'supported with GET requests',
+            'detail': 'The fields query param is only supported '
+                      'with GET requests.',
             'parameter': 'fields',
         })
 
