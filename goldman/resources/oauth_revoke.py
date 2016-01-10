@@ -30,7 +30,7 @@ class Resource(BaseResource):
     ]
 
     SERIALIZERS = [
-        goldman.JSONSerializer,
+        goldman.JsonSerializer,
     ]
 
     def __init__(self, revoke_token):

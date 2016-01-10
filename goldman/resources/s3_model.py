@@ -10,11 +10,11 @@
 
 import falcon
 import goldman
-import goldman.exceptions as exceptions
 import goldman.signals as signals
 import time
 
 from ..resources.base import Resource as BaseResource
+from goldman.exceptions import ServiceUnavailable
 from goldman.utils.error_helpers import abort
 from goldman.utils.responder_helpers import find
 from goldman.utils.s3_helpers import s3_connect, s3_upload
@@ -30,7 +30,7 @@ class Resource(BaseResource):
     ]
 
     SERIALIZERS = [
-        goldman.JSONSerializer,
+        goldman.JsonSerializer,
     ]
 
     def __init__(self, model, **kwargs):
@@ -46,7 +46,6 @@ class Resource(BaseResource):
 
         if not self.bucket:
             raise NotImplementedError('an S3 bucket is required')
-
         super(Resource, self).__init__()
 
     @property
@@ -104,7 +103,7 @@ class Resource(BaseResource):
             s3_url = s3_upload(self.acl, self.bucket, conn, props['content'],
                                props['content-type'], path)
         except IOError:
-            abort(exceptions.ServiceUnavailable(**{
+            abort(ServiceUnavailable(**{
                 'detail': 'The upload attempt failed unexpectedly',
             }))
 

@@ -69,8 +69,8 @@ class Resource(BaseResource):
     ]
 
     SERIALIZERS = [
-        goldman.CSVSerializer,
-        goldman.JSONAPISerializer,
+        goldman.CsvSerializer,
+        goldman.JsonApiSerializer,
     ]
 
     def __init__(self, model, disable=None):

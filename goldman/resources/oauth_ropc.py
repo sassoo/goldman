@@ -46,6 +46,7 @@ import falcon
 import goldman
 import goldman.signals as signals
 
+from goldman.exceptions import AuthRejected
 from ..resources.base import Resource as BaseResource
 
 
@@ -57,7 +58,7 @@ class Resource(BaseResource):
     ]
 
     SERIALIZERS = [
-        goldman.JSONSerializer,
+        goldman.JsonSerializer,
     ]
 
     def __init__(self, auth_creds):
@@ -69,7 +70,7 @@ class Resource(BaseResource):
     def _realm(self):
         """ Return a string representation of the authentication realm """
 
-        return 'Bearer realm="{}"'.format(goldman.config.AUTH_REALM)
+        return 'Bearer realm="%s"' % goldman.config.AUTH_REALM
 
     def on_post(self, req, resp):
         """ Validate the access token request for spec compliance
@@ -106,20 +107,18 @@ class Resource(BaseResource):
                 'error_uri': 'tools.ietf.org/html/rfc6749#section-4.3.2',
             })
         else:
-            auth_code = self.auth_creds(username, password)
-
-            if isinstance(auth_code, str):
+            try:
+                login, token = self.auth_creds(username, password)
+                goldman.sess.login = login
+                resp.serialize({
+                    'access_token': token,
+                    'token_type': 'Bearer',
+                })
+                signals.post_authenticate.send()
+            except AuthRejected as exc:
                 resp.status = falcon.HTTP_401
                 resp.set_header('WWW-Authenticate', self._realm)
                 resp.serialize({
                     'error': 'invalid_client',
-                    'error_description': auth_code,
+                    'error_description': exc.detail,
                 })
-            else:
-                goldman.sess.login = auth_code[0]
-                resp.serialize({
-                    'access_token': auth_code[1],
-                    'token_type': 'Bearer',
-                })
-
-                signals.post_authenticate.send()

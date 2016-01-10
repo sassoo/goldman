@@ -6,14 +6,14 @@
 """
 
 from ..serializers.base import Serializer as BaseSerializer
-from ..serializers.comma_sep import Serializer as CSVSerializer
-from ..serializers.json_7159 import Serializer as JSONSerializer
-from ..serializers.jsonapi import Serializer as JSONAPISerializer
+from ..serializers.comma_sep import Serializer as CsvSerializer
+from ..serializers.json_7159 import Serializer as JsonSerializer
+from ..serializers.jsonapi import Serializer as JsonApiSerializer
 
 
 SERIALIZERS = [
     BaseSerializer,
-    CSVSerializer,
-    JSONSerializer,
-    JSONAPISerializer,
+    CsvSerializer,
+    JsonSerializer,
+    JsonApiSerializer,
 ]

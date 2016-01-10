@@ -18,5 +18,5 @@ class Resource(BaseResource):
     ]
 
     SERIALIZERS = [
-        goldman.JSONSerializer,
+        goldman.JsonSerializer,
     ]

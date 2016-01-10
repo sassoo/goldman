@@ -25,7 +25,6 @@ class Resource(object):
 
         if not self.DESERIALIZERS:
             raise NotImplementedError('resource DESERIALIZERS required')
-
         elif not self.SERIALIZERS:
             raise NotImplementedError('resource SERIALIZERS required')
 
