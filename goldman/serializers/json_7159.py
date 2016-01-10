@@ -22,5 +22,4 @@ class Serializer(BaseSerializer):
         """ Call json.dumps & let it rip """
 
         super(Serializer, self).serialize(data)
-
-        self.resp.body = json.dumps(data, indent=4)
+        self.resp.body = json.dumps(data)
