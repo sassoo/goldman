@@ -3,9 +3,9 @@
     ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Serializer that is compliant with the JSON API specification
-    for error handling.
+    for error handling as defined here:
 
-    See http://jsonapi.org/format/#errors
+        jsonapi.org/format/#errors
 """
 
 import copy
@@ -26,8 +26,8 @@ class Serializer(HTTPStatus):
     Fields present but not compatible with the specification are
     silently removed.
 
-    :param errors: APIException object or list of them
-    :spec: jsonapi.org/format/#errors
+    :param errors:
+        APIException object or list of them
     """
 
     ERROR_OBJECT_FIELDS = [
@@ -47,7 +47,6 @@ class Serializer(HTTPStatus):
             errors = [errors]
 
         self.errors = [e().to_dict() for e in errors]
-
         super(Serializer, self).__init__(
             self.get_status(),
             body=self.get_body(),
@@ -59,10 +58,9 @@ class Serializer(HTTPStatus):
 
         Be sure to purge any unallowed properties from the object.
 
-        TIP: At the risk of being a bit slow we copy the errors instead
-             of mutating them since they may have key/vals like headers
-             that are useful elsewhere. Plus, mutations in functions are
-             bad, mmmmKaaay!
+        TIP: At the risk of being a bit slow we copy the errors
+             instead of mutating them since they may have key/vals
+             like headers that are useful elsewhere.
         """
 
         body = copy.deepcopy(self.errors)
@@ -71,9 +69,7 @@ class Serializer(HTTPStatus):
             for key in error.keys():
                 if key not in self.ERROR_OBJECT_FIELDS:
                     del error[key]
-
-        return json.dumps({'errors': body}, sort_keys=True,
-                          indent=4)
+        return json.dumps({'errors': body})
 
     def get_headers(self):
         """ Return a HTTPStatus compliant headers attribute
@@ -86,7 +82,6 @@ class Serializer(HTTPStatus):
         for error in self.errors:
             if 'headers' in error:
                 headers.update(error['headers'])
-
         return headers
 
     def get_status(self):
@@ -102,9 +97,7 @@ class Serializer(HTTPStatus):
 
         if not same and codes[0].startswith('4'):
             return falcon.HTTP_400
-
         elif not same and codes[0].startswith('5'):
             return falcon.HTTP_500
-
         else:
             return codes[0]
