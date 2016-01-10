@@ -25,7 +25,6 @@ def cmp_val_salt_hash(val, salt, str_hash):
     """
 
     computed_hash = hashlib.sha256(val + salt).hexdigest()
-
     return computed_hash == str_hash
 
 
@@ -50,7 +49,6 @@ def gen_salt_and_hash(val=None):
 
     str_salt = random_str()
     str_hash = hashlib.sha256(val + str_salt).hexdigest()
-
     return str_salt, str_hash
 
 
@@ -100,10 +98,8 @@ def str_to_dt(val):
 
     try:
         if val.isdigit():
-            val = dt.utcfromtimestamp(float(val))
+            return dt.utcfromtimestamp(float(val))
         else:
-            val = dt.strptime(val, '%Y-%m-%dT%H:%M:%S.%f')
+            return dt.strptime(val, '%Y-%m-%dT%H:%M:%S.%f')
     except (AttributeError, TypeError):
         raise ValueError
-
-    return val
