@@ -8,6 +8,8 @@
 
 import falcon
 
+from goldman.utils.str_helpers import random_str
+
 
 class APIException(Exception):
     """ Exception class for error handling in JSON API format.
@@ -19,6 +21,7 @@ class APIException(Exception):
 
         super(APIException, self).__init__()
 
+        kwargs['id'] = kwargs.get('id', random_str())
         kwargs['links'] = {'about': kwargs.get('links', '')}
         kwargs['detail'] = kwargs.get('detail', '')
 
