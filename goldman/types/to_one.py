@@ -50,8 +50,8 @@ class ToOne(object):
 
         name = self.__class__.__name__
 
-        return '{}(\'{}\', \'{}\', rid=\'{}\')'.format(name, self.rtype,
-                                                       self.field, self.rid)
+        return '%s(\'%s\', \'%s\', rid=\'%s\')' % (name, self.rtype, self.field,
+                                                   self.rid)
 
     def __str__(self):
 
@@ -109,7 +109,6 @@ class Type(BaseType):
             return value
 
         value = self._cast_rid(value)
-
         return ToOne(self.rtype, self.field, rid=value)
 
     def to_primitive(self, value, context=None):
@@ -132,5 +131,4 @@ class Type(BaseType):
         if value.rid and not self.skip_exists:
             if not value.load():
                 raise ValidationError(self.messages['exists'])
-
         return value

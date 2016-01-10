@@ -44,8 +44,8 @@ class ToMany(object):
 
         name = self.__class__.__name__
 
-        return '{}(\'{}\', \'{}\', \'{}\')'.format(name, self.rtype,
-                                                   self.field, self.rid)
+        return '%s(\'%s\', \'%s\', \'%s\')' % (name, self.rtype, self.field,
+                                               self.rid)
 
     @property
     def is_loaded(self):
