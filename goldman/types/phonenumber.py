@@ -62,6 +62,5 @@ class Type(BaseType):
         """
 
         if hasattr(value, 'pretty'):
-            value = value.pretty
-
+            return value.pretty
         return value
