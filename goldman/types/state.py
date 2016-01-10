@@ -36,13 +36,11 @@ class Type(BaseType):
 
         try:
             state = us.states.lookup(unicode(value))
-
             if not state:
                 raise TypeError
+            return state
         except TypeError:
             raise ConversionError(self.messages['convert'])
-
-        return state
 
     def to_primitive(self, value, context=None):
         """ Schematics serializer override
@@ -53,6 +51,5 @@ class Type(BaseType):
         """
 
         if value:
-            value = str(value)
-
+            return str(value)
         return value
