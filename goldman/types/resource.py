@@ -23,15 +23,13 @@ class Type(StringType):
     def __init__(self, rtype, **kwargs):
 
         self.rtype = rtype
-
         super(Type, self).__init__(**kwargs)
 
     def to_native(self, value, context=None):
         """ Schematics deserializer override """
 
         if not value:
-            value = self.rtype
-
+            return self.rtype
         return value
 
     def validate_rtype(self, value):
@@ -45,7 +43,5 @@ class Type(StringType):
 
         if not value or value != self.rtype:
             msg = self.messages['rtype'].format(self.rtype, value)
-
             raise ValidationError(msg)
-
         return value
