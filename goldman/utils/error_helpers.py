@@ -6,10 +6,9 @@
     to abort() in the Flask micro-web framework.
 """
 
-import goldman.exceptions as exceptions
-
+from goldman.exceptions import AccessDenied, ModificationDenied
 from goldman.serializers.jsonapi_error import Serializer as \
-    JSONAPIErrorSerializer
+    JsonApiErrorSerializer
 
 
 __all__ = ['abort', 'access_fail', 'mod_fail']
@@ -21,26 +20,26 @@ def abort(error):
     See jsonapi_error.Serializer docs on the usage of error
     """
 
-    raise JSONAPIErrorSerializer(error)
+    raise JsonApiErrorSerializer(error)
 
 
 def access_fail(msg=None):
     """ Simple wrapper around aborting with AccessDenied """
 
     if msg:
-        abort(exceptions.AccessDenied(**{
+        abort(AccessDenied(**{
             'detail': msg,
         }))
     else:
-        abort(exceptions.AccessDenied)
+        abort(AccessDenied)
 
 
 def mod_fail(msg=None):
     """ Simple wrapper around aborting with ModificationDenied """
 
     if msg:
-        abort(exceptions.ModificationDenied(**{
+        abort(ModificationDenied(**{
             'detail': msg,
         }))
     else:
-        abort(exceptions.ModificationDenied)
+        abort(ModificationDenied)
