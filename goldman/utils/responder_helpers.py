@@ -176,7 +176,25 @@ def _to_rest_hide(model, props):
 
 
 def _to_rest_includes(models, includes):
-    """ Fetch the models to be included """
+    """ Fetch the models to be included
+
+    The includes should follow a few basic rules:
+
+        * the include MUST not already be an array member
+          of the included array (no dupes)
+
+        * the include MUST not be the same as the primary
+          data if the primary data is a single resource
+          object (no dupes)
+
+        * the include MUST not be an array member of the
+          primary data if the primary data an array of
+          resource objects (no dupes)
+
+    Basically, each included array member should be the only
+    instance of that resource object in the entire restified
+    data.
+    """
 
     included = []
     includes = includes or []

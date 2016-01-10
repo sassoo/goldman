@@ -51,17 +51,20 @@ class Serializer(BaseSerializer):
         else:
             body.update({'data': None})
 
-        self.resp.body = json.dumps(body, indent=4)
+        self.resp.body = json.dumps(body)
 
     def _serialize_datas(self, datas):
         """ Turn the list into JSON API compliant resource objects
 
-        :spec: jsonapi.org/format/#document-top-level
-        :param datas: list of dicts
-        :return: list
+        :spec:
+            jsonapi.org/format/#document-top-level
+        :param datas:
+            list of dicts
+        :return:
+            list resources in JSON API format
         """
 
-        return [self._serialize_data(d) for d in datas]
+        return [self._serialize_data(data) for data in datas]
 
     def _serialize_data(self, data):
         """ Turn the data into a JSON API compliant resource object
@@ -70,9 +73,12 @@ class Serializer(BaseSerializer):
               It's complete shit because it mutates data &
               yet returns a new doc. FIX.
 
-        :spec: jsonapi.org/format/#document-resource-objects
-        :param data: dict
-        :return: dict
+        :spec:
+            jsonapi.org/format/#document-resource-objects
+        :param data:
+            dict for serializing
+        :return:
+            dict resource in JSON API format
         """
 
         rels = {}
@@ -88,12 +94,10 @@ class Serializer(BaseSerializer):
 
         for key, val in data['to_many'].items():
             rels.update(self._serialize_to_many(key, val, rlink))
+        del data['to_many']
 
         for key, val in data['to_one'].items():
             rels.update(self._serialize_to_one(key, val, rlink))
-
-        # purge all fields that aren't real attributes
-        del data['to_many']
         del data['to_one']
 
         if data:
@@ -103,36 +107,11 @@ class Serializer(BaseSerializer):
 
         return doc
 
-    def _serialize_included(self, data):
-        """ Return a JSON API compliant included section
-
-        Each include will need to be serialized since it's an
-        ordinary resource object but only perform serialization
-        according to the rules of the spec (otherwise ignore):
-
-            * the include MUST not already be an array member
-              of the included array (no dupes)
-
-            * the include MUST not be the same as the primary
-              data if the primary data is a single resource
-              object (no dupes)
-
-            * the include MUST not be an array member of the
-              primary data if the primary data an array of
-              resource objects (no dupes)
-
-        Basically, each included array member should be the only
-        instance of that resource object in the entire JSON API
-        response. Clients will create the association via the
-        relationship linkage in the datas relationship object.
-        """
-
     def _serialize_pages(self):
         """ Return a JSON API compliant pagination links section """
 
         path = self.req.path
         pages = self.req.pages
-
         links = {
             'self': '%s?%s' % (path, pages.current),
             'first': None,
@@ -183,12 +162,14 @@ class Serializer(BaseSerializer):
             }
         }
 
-        if vals is None:
-            del rel[key]['data']
-        elif vals:
+        try:
             for val in vals:
-                val = {'id': val['rid'], 'type': val['rtype']}
-                rel[key]['data'].append(val)
+                rel[key]['data'].append({
+                    'id': val['rid'],
+                    'type': val['rtype'],
+                })
+        except TypeError:
+            del rel[key]['data']
 
         return rel
 
@@ -201,21 +182,20 @@ class Serializer(BaseSerializer):
             the string name of the relationship field
         :param val:
             dict containing `rid` & `rtype` keys for the to_one &
-            None if the to_one is unknown
+            None if the to_one is null
         :return:
             dict as documented in the spec link
         """
 
-        rel = {
+        data = None
+        if val and val['rid']:
+            data = {'id': val['rid'], 'type': val['rtype']}
+
+        return {
             key: {
-                'data': None,
+                'data': data,
                 'links': {
                     'related': rlink + '/' + key
                 }
             }
         }
-
-        if val and val['rid']:
-            rel[key]['data'] = {'id': val['rid'], 'type': val['rtype']}
-
-        return rel
