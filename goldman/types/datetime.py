@@ -18,19 +18,6 @@ from schematics.types import DateTimeType as SchematicsDateTimeType
 class Type(SchematicsDateTimeType):
     """ Extended DateTimeType to support epoch timestamps """
 
-    def to_native(self, value, context=None):
-        """ Schematics deserializer override """
-
-        if isinstance(value, dt):
-            return value
-
-        try:
-            value = dt.utcfromtimestamp(value)
-        except TypeError:
-            value = super(Type, self).to_native(value, context)
-
-        return value
-
     def to_primitive(self, value, context=None):
         """ Schematics serializer override
 
@@ -41,10 +28,8 @@ class Type(SchematicsDateTimeType):
         if context and context.get('epoch_date'):
             epoch = dt(1970, 1, 1)
             value = (value - epoch).total_seconds()
-            value = int(value)
+            return int(value)
         elif context and context.get('datetime_date'):
-            pass
+            return value
         else:
-            value = super(Type, self).to_primitive(value, context)
-
-        return value
+            return super(Type, self).to_primitive(value, context)
