@@ -29,7 +29,7 @@ def rtype_url(rtype):
         relative string URL
     """
 
-    return '{}/{}'.format(goldman.config.BASE_URL, rtype)
+    return '%s/%s' % (goldman.config.BASE_URL, rtype)
 
 
 def rid_url(rtype, rid):
@@ -43,4 +43,4 @@ def rid_url(rtype, rid):
         relative string URL
     """
 
-    return '{}/{}'.format(rtype_url(rtype), rid)
+    return '%s/%s' % (rtype_url(rtype), rid)
