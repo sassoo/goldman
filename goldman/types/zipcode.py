@@ -25,5 +25,4 @@ class Type(StringType):
 
         if not Type.ZIPCODE_REGEX.match(value):
             raise ValidationError(self.messages['zip_code'])
-
         return value
