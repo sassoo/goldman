@@ -107,20 +107,3 @@ def str_to_dt(val):
         raise ValueError
 
     return val
-
-
-def str_to_uuid(val):
-    """ Return a UUID object if the string value represents one
-
-    :param val: str
-    :return: UUID
-    :raise: ValueError
-    """
-
-    if isinstance(val, uuid.UUID):
-        return val
-
-    try:
-        return uuid.UUID(str(val), version=4)
-    except (AttributeError, ValueError):
-        raise ValueError

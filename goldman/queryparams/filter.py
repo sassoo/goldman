@@ -21,11 +21,14 @@
 """
 
 import goldman
-import goldman.exceptions as exceptions
 import re
 
-from goldman.utils.error_helpers import abort
+from goldman.exceptions import InvalidQueryParams
 from goldman.utils.str_helpers import str_to_bool, str_to_dt
+
+
+LINK = 'jsonapi.org/format/#fetching-filtering'
+PARAM = 'filter'
 
 
 class Filter(object):
@@ -35,31 +38,27 @@ class Filter(object):
     filter critera for later use by the store or whatever.
 
     :param field:
-        String field name to filter on. Required.
-    :param neg:
-        Boolean negation flag. Default: False.
-    :param oper: str operator expression
-        String operator expression. Required.
+        string field name to filter on
+    :param oper:
+        string operator expression
     :param val:
         Value for expression evaluation & can be any data
         type that is expected by the store. It should already
         have been cast into whatever data type is expected.
     """
 
-    def __init__(self, field, oper, val, neg=False):
+    def __init__(self, field, oper, val):
 
         self.field = field
         self.oper = oper
-        self.neg = neg
         self.val = val
 
     def __eq__(self, other):
-        """ Compare other Sortable objects or strings """
+        """ Compare other Filter objects """
 
         try:
             return self.field == other.field and \
                 self.oper == other.oper and \
-                self.neg == other.neg and \
                 self.val == other.val
         except AttributeError:
             return False
@@ -67,22 +66,12 @@ class Filter(object):
     def __repr__(self):
 
         name = self.__class__.__name__
-
-        return '{}(\'{}\', \'{}\', \'{}\', neg={})'.format(
-            name,
-            self.field,
-            self.oper,
-            self.val,
-            self.neg,
-        )
+        return '%s(\'%s\', \'%s\', \'%s\')' % (name, self.field, self.oper,
+                                               self.val)
 
     def __str__(self):
 
-        return 'filter[{}__{}]={}'.format(
-            self.field,
-            self.oper,
-            self.val,
-        )
+        return 'filter[%s__%s]=%s' % (self.field, self.oper, self.val)
 
 
 class FilterOr(object):
@@ -98,7 +87,7 @@ class FilterOr(object):
         self.filters = filters
 
     def __contains__(self, item):
-        """ Leverage the single Filter for comparison logic """
+        """ Leverage the Filter __eq__ for comparison logic """
 
         return item in self.filters
 
@@ -113,12 +102,7 @@ class FilterOr(object):
     def __repr__(self):
 
         name = self.__class__.__name__
-
-        return '{}({})'.format(name, self.filters)
-
-    def __str__(self):
-
-        return str(self.filters)
+        return '%s(%s)' % (name, self.filters)
 
 
 class FilterRel(Filter):
@@ -138,7 +122,7 @@ class FilterRel(Filter):
         foreign_field = rid
         foreign_rtype = logins
 
-    foreign_rid & foreign_rtype typically represent the
+    foreign_field & foreign_rtype typically represent the
     same named properties on our goldman relationship types.
     """
 
@@ -169,34 +153,33 @@ def _parse_param(key):
     match = regex.match(key)
 
     if match:
-        field_and_opers = match.groups()[0].split('__')
+        field_and_oper = match.groups()[0].split('__')
 
-        if len(field_and_opers) == 1:
-            field, oper = field_and_opers[0], 'eq'
-
-        elif len(field_and_opers) == 2:
-            field, oper = field_and_opers
-
+        if len(field_and_oper) == 1:
+            return field_and_oper[0], 'eq'
+        elif len(field_and_oper) == 2:
+            return tuple(field_and_oper)
         else:
-            abort(exceptions.InvalidQueryParams(**{
-                'detail': 'Multiple filter operators are not allowed '
-                          'in a single filter expression. Please '
-                          'modify {} & retry'.format(key),
-                'parameter': 'filter',
-            }))
-
-        return field, oper
+            raise InvalidQueryParams(**{
+                'detail': 'The filter query param of "%s" is not '
+                          'supported. Multiple filter operators are '
+                          'not allowed in a single expression.' % key,
+                'links': LINK,
+                'parameter': PARAM,
+            })
 
 
 def _validate_field(param, fields):
     """ Ensure the field exists on the model """
 
     if '.' not in param.field and param.field not in fields:
-        abort(exceptions.InvalidQueryParams(**{
-            'detail': 'Invalid filter query of {}, {} field not '
-                      'found'.format(param, param.field),
-            'parameter': 'filter',
-        }))
+        raise InvalidQueryParams(**{
+            'detail': 'The filter query param of "%s" is not possible. The '
+                      'resource requested does not have a "%s" field. Please '
+                      'modify your request & retry.' % (param, param.field),
+            'links': LINK,
+            'parameter': PARAM,
+        })
 
 
 def _validate_rel(param, rels):
@@ -209,121 +192,130 @@ def _validate_rel(param, rels):
     """
 
     if param.field.count('.') > 1:
-        abort(exceptions.InvalidQueryParams(**{
-            'detail': 'Filtering on nested relationships is not '
-                      'currently supported. Please remove {} from '
-                      'your request & retry'.format(param),
-            'parameter': 'filter',
-        }))
-
+        raise InvalidQueryParams(**{
+            'detail': 'The filter query param of "%s" is attempting to '
+                      'filter on a nested relationship which is not '
+                      'currently supported.' % param,
+            'links': LINK,
+            'parameter': PARAM,
+        })
     elif '.' in param.field:
         model_field = param.field.split('.')[0]
 
         if model_field not in rels:
-            abort(exceptions.InvalidQueryParams(**{
-                'detail': 'Invalid filter query of {}, {} field is not '
-                          'a relationship field'.format(param, param.field),
-                'parameter': 'filter',
-            }))
+            raise InvalidQueryParams(**{
+                'detail': 'The filter query param of "%s" is attempting to '
+                          'filter on a relationship but the "%s" field is '
+                          'NOT a relationship field.' % (param, model_field),
+                'links': LINK,
+                'parameter': PARAM,
+            })
 
 
-def _validate_params(params, model):  # pylint: disable=too-many-branches
-    """ Ensure the filters cast properly according to there operator """
+def _validate_param(param):  # pylint: disable=too-many-branches
+    """ Ensure the filter cast properly according to the operator """
 
-    fields = model.all_fields
-    rels = model.relationships
+    detail = None
 
-    for param in params:
-        detail = None
+    if param.oper not in goldman.config.QUERY_FILTERS:
+        detail = 'The query filter {} is not a supported ' \
+                 'operator. Please change {} & retry your ' \
+                 'request'.format(param.oper, param)
 
-        _validate_rel(param, rels)
-        _validate_field(param, fields)
+    elif param.oper in goldman.config.GEO_FILTERS:
+        try:
+            if not isinstance(param.val, list) or len(param.val) <= 2:
+                raise ValueError
+            else:
+                param.val = [float(i) for i in param.val]
+        except ValueError:
+            detail = 'The query filter {} requires a list ' \
+                     'of floats for geo evaluation. Please ' \
+                     'modify your request & retry'.format(param)
 
-        if param.oper not in goldman.config.QUERY_FILTERS:
-            detail = 'The query filter {} is not a supported ' \
-                     'operator. Please change {} & retry your ' \
-                     'request'.format(param.oper, param)
+    elif param.oper in goldman.config.ENUM_FILTERS:
+        if not isinstance(param.val, list):
+            param.val = [param.val]
 
-        elif param.oper in goldman.config.GEO_FILTERS:
-            try:
-                if not isinstance(param.val, list) or len(param.val) <= 2:
-                    raise ValueError
-                else:
-                    param.val = [float(i) for i in param.val]
-            except ValueError:
-                detail = 'The query filter {} requires a list ' \
-                         'of floats for geo evaluation. Please ' \
-                         'modify your request & retry'.format(param)
+        param.val = tuple(param.val)
 
-        elif param.oper in goldman.config.ENUM_FILTERS:
-            if not isinstance(param.val, list):
-                param.val = [param.val]
+    elif isinstance(param.val, list):
+        detail = 'The query filter {} should not be specified more ' \
+                 'than once or have multiple values. Please modify ' \
+                 'your request & retry'.format(param)
 
-            param.val = tuple(param.val)
+    elif param.oper in goldman.config.BOOL_FILTERS:
+        try:
+            param.val = str_to_bool(param.val)
+        except ValueError:
+            detail = 'The query filter {} requires a boolean ' \
+                     'for evaluation. Please modify your ' \
+                     'request & retry'.format(param)
 
-        elif isinstance(param.val, list):
-            detail = 'The query filter {} should not be specified more ' \
-                     'than once or have multiple values. Please modify ' \
-                     'your request & retry'.format(param)
+    elif param.oper in goldman.config.DATE_FILTERS:
+        try:
+            param.val = str_to_dt(param.val)
+        except ValueError:
+            detail = 'The query filter {} supports only an ' \
+                     'epoch or ISO 8601 timestamp. Please ' \
+                     'modify your request & retry'.format(param)
 
-        elif param.oper in goldman.config.BOOL_FILTERS:
-            try:
-                param.val = str_to_bool(param.val)
-            except ValueError:
-                detail = 'The query filter {} requires a boolean ' \
-                         'for evaluation. Please modify your ' \
-                         'request & retry'.format(param)
+    elif param.oper in goldman.config.NUM_FILTERS:
+        try:
+            param.val = int(param.val)
+        except ValueError:
+            detail = 'The query filter {} requires a number ' \
+                     'for evaluation. Please modify your ' \
+                     'request & retry'.format(param)
 
-        elif param.oper in goldman.config.DATE_FILTERS:
-            try:
-                param.val = str_to_dt(param.val)
-            except ValueError:
-                detail = 'The query filter {} supports only an ' \
-                         'epoch or ISO 8601 timestamp. Please ' \
-                         'modify your request & retry'.format(param)
-
-        elif param.oper in goldman.config.NUM_FILTERS:
-            try:
-                param.val = int(param.val)
-            except ValueError:
-                detail = 'The query filter {} requires a number ' \
-                         'for evaluation. Please modify your ' \
-                         'request & retry'.format(param)
-
-        if detail:
-            abort(exceptions.InvalidQueryParams(**{
-                'detail': detail,
-                'parameter': 'filter',
-            }))
+    if detail:
+        raise InvalidQueryParams(**{
+            'detail': detail,
+            'links': LINK,
+            'parameter': PARAM,
+        })
 
 
 def init(req, model):
     """ Return an array of Filter objects. """
 
+    fields = model.all_fields
+    rels = model.relationships
     params = []
 
     for key, val in req.params.items():
         try:
             field, oper = _parse_param(key)
-        except (TypeError, ValueError):
+        except ValueError:
             continue
 
-        if '.' in field:
-            field_type = getattr(model, field.split('.')[0])
+        try:
+            local_field, foreign_filter = field.split('.')
+            field_type = getattr(model, local_field)
+
             foreign_field = field_type.field
             foreign_rtype = field_type.rtype
 
-            local_field, foreign_filter = field.split('.')
             if hasattr(field_type, 'local_field'):
                 local_field = field_type.local_field
 
             param = FilterRel(foreign_field, foreign_filter, foreign_rtype,
                               local_field, field, oper, val)
-        else:
+        except AttributeError:
+            raise InvalidQueryParams(**{
+                'detail': 'The filter query param "%s" specified a filter '
+                          'containing a "." indicating a relationship filter '
+                          'but a relationship by that name does not exist '
+                          'on the requested resource.' % key,
+                'links': LINK,
+                'parameter': PARAM,
+            })
+        except ValueError:
             param = Filter(field, oper, val)
-
-        params.append(param)
-
-    _validate_params(params, model)
+        else:
+            _validate_param(param)
+            _validate_rel(param, rels)
+            _validate_field(param, fields)
+            params.append(param)
 
     return params
