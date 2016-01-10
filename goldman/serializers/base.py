@@ -2,7 +2,8 @@
     serializers.base
     ~~~~~~~~~~~~~~~~
 
-    Our base serializer.
+    Our base serializer to be sub-classed by the other
+    serializers.
 """
 
 
@@ -23,6 +24,9 @@ class Serializer(object):
         These are common things for all serializers. Mostly,
         stuff to do with managing headers. The data passed
         in may not be reliable for much of anything.
+
+        Conditionally, set the Content-Type header unless it
+        has already been set.
         """
 
         if not self.resp.content_type:
