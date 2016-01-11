@@ -71,6 +71,8 @@ class Paginator(object):
 
         if self.total and self.limit < self.total:
             return 'page[offset]=0&page[limit]=%s' % self.limit
+        else:
+            return None
 
     @property
     def last(self):
@@ -105,6 +107,8 @@ class Paginator(object):
             else:
                 offset = self.offset - self.limit
                 return 'page[offset]=%s&page[limit]=%s' % (offset, self.limit)
+        else:
+            return None
 
     @staticmethod
     def _cast_page(val):
@@ -117,6 +121,17 @@ class Paginator(object):
             return val
         except (TypeError, ValueError):
             raise ValueError
+
+    def to_dict(self):
+        """ Convert the Paginator into a dict """
+
+        return {
+            'current': self.current,
+            'first': self.first,
+            'last': self.last,
+            'next': self.more,
+            'prev': self.prev,
+        }
 
 
 def init(req, model):  # pylint: disable=unused-argument

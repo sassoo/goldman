@@ -36,11 +36,16 @@ class Serializer(BaseSerializer):
             'links': {
                 'self': self.req.path,
             },
+            'meta': {
+                'total-included': 0,
+                'total-primary': self.req.pages.total,
+            },
         }
 
         included = data['included']
         if included:
             body['included'] = self._serialize_datas(included)
+            body['meta']['total-included'] = len(included)
 
         _data = data['data']
         if isinstance(_data, list):
@@ -108,34 +113,29 @@ class Serializer(BaseSerializer):
         return doc
 
     def _serialize_pages(self):
-        """ Return a JSON API compliant pagination links section """
+        """ Return a JSON API compliant pagination links section
 
-        path = self.req.path
-        pages = self.req.pages
-        links = {
-            'self': '%s?%s' % (path, pages.current),
-            'first': None,
-            'last': None,
-            'next': None,
-            'prev': None,
-        }
+        If the paginator has a value for a given link then this
+        method will also add the same links to the response
+        objects `link` header according to the guidance of
+        RFC 5988.
 
-        first = pages.first
-        if first:
-            links['first'] = '%s?%s' % (path, first)
+        Falcon has a native add_link helper for forming the
+        `link` header according to RFC 5988.
 
-        last = pages.last
-        if last:
-            links['last'] = '%s?%s' % (path, last)
+        :return:
+            dict of links used for pagination
+        """
 
-        more = pages.more
-        if more:
-            links['next'] = '%s?%s' % (path, more)
+        pages = self.req.pages.to_dict()
+        links = {}
 
-        prev = pages.prev
-        if prev:
-            links['prev'] = '%s?%s' % (path, prev)
-
+        for key, val in pages.items():
+            if val:
+                links[key] = '%s?%s' % (self.req.path, val)
+                self.resp.add_link(links[key], key)
+            else:
+                links[key] = val
         return links
 
     def _serialize_to_many(self, key, vals, rlink):
