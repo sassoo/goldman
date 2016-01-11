@@ -286,7 +286,7 @@ def init(req, model):
     for key, val in req.params.items():
         try:
             field, oper = _parse_param(key)
-        except ValueError:
+        except (TypeError, ValueError):
             continue
 
         try:

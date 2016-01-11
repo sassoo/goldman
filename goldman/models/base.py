@@ -45,7 +45,6 @@ class Model(_SchematicsModel):
         of the ToOneType expects.
         """
 
-        print 'XXX IS THIS NEEDED?'
         if name in self.to_one and hasattr(value, 'rid_value'):
             to_one = getattr(self, '_fields')[name]
             value = to_one.to_native(value.rid_value)
