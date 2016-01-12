@@ -39,7 +39,7 @@ class Resource(BaseResource):
         self.mimetypes = kwargs.get('mimetypes', self.MIMETYPES)
 
         # s3 properties
-        self.acl = kwargs.get('bucket', 'public-read')
+        self.acl = kwargs.get('acl', 'public-read')
         self.bucket = kwargs.get('bucket', goldman.config.S3_BUCKET)
         self.key = kwargs.get('key', goldman.config.S3_KEY)
         self.secret = kwargs.get('secret', goldman.config.S3_SECRET)
