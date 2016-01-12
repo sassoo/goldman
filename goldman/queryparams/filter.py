@@ -312,10 +312,10 @@ def init(req, model):
             })
         except ValueError:
             param = Filter(field, oper, val)
-        else:
-            _validate_param(param)
-            _validate_rel(param, rels)
-            _validate_field(param, fields)
-            params.append(param)
+
+        _validate_param(param)
+        _validate_rel(param, rels)
+        _validate_field(param, fields)
+        params.append(param)
 
     return params
