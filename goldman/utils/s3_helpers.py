@@ -26,7 +26,7 @@ def gen_url(bucket, path):
         A string URL to the object
     """
 
-    return '//s3.amazonaws.com/%s/%s' % (bucket, path)
+    return 'https://s3.amazonaws.com/%s/%s' % (bucket, path)
 
 
 def s3_connect(key, secret):
