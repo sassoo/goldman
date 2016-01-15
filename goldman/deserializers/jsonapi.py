@@ -199,7 +199,7 @@ class Deserializer(JsonDeserializer):
         rid = isinstance(resource.get('id'), unicode)
         rtype = isinstance(resource.get('type'), unicode)
 
-        if not rtype or not (self.req.is_patching and not rid):
+        if not rtype or (self.req.is_patching and not rid):
             self.fail('JSON API requires that every resource object MUST '
                       'contain a `type` top-level key. Additionally, when '
                       'modifying an existing resource object an `id` '
