@@ -14,13 +14,9 @@
     This middleware requires a callable to be passed in as
     the `auth_token` property which will be given the token.
 
-    The callable should return a login model of the successfully
-    authenticated user or raise an `AuthRejected` exception
+    The callable should raise an `AuthRejected` exception
     causing the request to be aborted IF the middleware's
     `optional` property is set to False (default).
-
-    The model will be assigned to the `goldman.sess.login`
-    propery if authentication succeeds.
 
     NOTE: As documented in RFC 6750 on certain errors the
           the registered error code & description is passed
@@ -45,7 +41,6 @@
 """
 
 import goldman
-import goldman.signals as signals
 
 from goldman.exceptions import (
     AuthRejected,
@@ -164,12 +159,9 @@ class Middleware(object):
         if req.path in (self.revoke_endpoint, self.token_endpoint):
             return
 
-        signals.pre_authenticate.send()
-
         try:
             token = self._get_token(req)
-            goldman.sess.login = self.auth_token(token)
-            signals.post_authenticate.send()
+            self.auth_token(token)
         except (AuthRequired, InvalidAuthSyntax) as exc:
             if not self.optional:
                 abort(exc)

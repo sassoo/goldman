@@ -89,8 +89,8 @@ class Resource(BaseResource):
         foremost.
         """
 
-        signals.responder_pre_any.send(self.model)
-        signals.responder_pre_upload.send(self.model)
+        signals.pre_req.send(self.model)
+        signals.pre_req_upload.send(self.model)
 
         props = req.deserialize(self.mimetypes)
         model = find(self.model, rid)
@@ -106,13 +106,13 @@ class Resource(BaseResource):
             abort(ServiceUnavailable(**{
                 'detail': 'The upload attempt failed unexpectedly',
             }))
+        else:
+            signals.post_upload.send(self.model, model=model, url=s3_url)
 
-        signals.post_upload.send(self.model, model=model, url=s3_url)
+            resp.location = s3_url
+            resp.status = falcon.HTTP_201
 
-        resp.location = s3_url
-        resp.status = falcon.HTTP_201
+            resp.serialize({'data': {'url': s3_url}})
 
-        resp.serialize({'data': {'url': s3_url}})
-
-        signals.responder_post_any.send(self.model)
-        signals.responder_post_upload.send(self.model)
+            signals.post_req.send(self.model)
+            signals.post_req_upload.send(self.model)

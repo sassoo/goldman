@@ -12,39 +12,16 @@
 
     The resource requires a callable to be passed in as the
     auth_creds property which will be given a username &
-    password. The callable should return a tuple of:
-
-        (model, token)
-
-    The model will be assigned to the goldman.sess.login
-    propery.
+    password. The callable should return a token.
 
     Returning a string will be interpreted as an error &
     a RFC 6749 compliant error response will be sent with
     the error message as the error_description field in
     the response.
-
-    As an example, if you had a model class named Login with
-    a method named auth it could look like:
-
-        class Login(...):
-            ...
-            def auth(self, username, password):
-                login = get_login(username)
-
-                if not login:
-                    return 'Invalid username'
-                elif login.locked_out:
-                    return 'Account has been disabled'
-                elif not login.validate_password(password):
-                    return 'Invalid password'
-                else:
-                    return login, token
 """
 
 import falcon
 import goldman
-import goldman.signals as signals
 
 from goldman.exceptions import AuthRejected
 from ..resources.base import Resource as BaseResource
@@ -79,8 +56,6 @@ class Resource(BaseResource):
         on failure & is handled in this responder.
         """
 
-        signals.pre_authenticate.send()
-
         grant_type = req.get_param('grant_type')
         password = req.get_param('password')
         username = req.get_param('username')
@@ -108,13 +83,11 @@ class Resource(BaseResource):
             })
         else:
             try:
-                login, token = self.auth_creds(username, password)
-                goldman.sess.login = login
+                token = self.auth_creds(username, password)
                 resp.serialize({
                     'access_token': token,
                     'token_type': 'Bearer',
                 })
-                signals.post_authenticate.send()
             except AuthRejected as exc:
                 resp.status = falcon.HTTP_401
                 resp.set_header('WWW-Authenticate', self._realm)

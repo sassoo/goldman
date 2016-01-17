@@ -63,7 +63,14 @@ class Model(DefaultSchemaModel):
 
     @classmethod
     def auth_creds(cls, username, password):
-        """ Callback method for Basic Authentication """
+        """ Validate a username & password
+
+        A token is returned if auth is successful & can be
+        used to authorize future requests or ignored entirely
+        if the authorization mechanizm does not need it.
+
+        :return: string token
+        """
 
         store = goldman.sess.store
         login = store.find(cls.RTYPE, 'username', username)
@@ -78,17 +85,10 @@ class Model(DefaultSchemaModel):
             msg = 'The password provided is incorrect. Spelling error?'
             raise AuthRejected(**{'detail': msg})
         else:
-            return login
-
-    @classmethod
-    def auth_creds_token(cls, username, password):
-        """ Callback method for OAuth 2.0 ROPC resource """
-
-        login = cls.auth_creds(username, password)
-
-        if not login.token:
-            login.token = random_str()
-        return login, login.token
+            if not login.token:
+                login.token = random_str()
+            login.post_authenticate()
+            return login.token
 
     @classmethod
     def auth_token(cls, token):
@@ -104,7 +104,34 @@ class Model(DefaultSchemaModel):
             msg = 'The login account is currently locked out.'
             raise AuthRejected(**{'detail': msg})
         else:
-            return login
+            login.post_authenticate()
+
+    def post_authenticate(self):
+        """ Update the login_date timestamp
+
+        Initialize the thread local sess.login property with
+        the authenticated login model.
+
+        The login_date update will be debounced so writes don't
+        occur on every hit of the the API. If the login_date
+        was modified within 15 minutes then don't update it.
+        """
+
+        goldman.sess.login = self
+        now = dt.now()
+
+        if not self.login_date:
+            self.login_date = now
+        else:
+            sec_since_updated = (now - self.login_date).seconds
+            min_since_updated = sec_since_updated / 60
+
+            if min_since_updated > 15:
+                self.login_date = now
+
+        if self.dirty:
+            store = goldman.sess.store
+            store.update(self)
 
     def validate_username(self, data, value):
         """ Ensure the username is unique
@@ -130,47 +157,19 @@ def pre_create(sender, model):
     """ Callback before creating a new login
 
     Without a password during create we are forced to
-    lock the account & set the password to something
-    random.
+    set the password to something random & complex.
     """
 
-    if not model.password:
-        model.locked, model.password = True, random_str()
+    if isinstance(model, Model) and not model.password:
+        model.password = random_str()
 
 
 def pre_save(sender, model):
     """ Hash the password if being changed """
 
-    if 'password' in model.dirty_fields:
+    if isinstance(model, Model) and 'password' in model.dirty_fields:
         model.salt, model.password = gen_salt_and_hash(model.password)
 
 
-def post_authenticate(sender):
-    """ Update the login_date timestamp
-
-    The login_date update will be debounced so writes don't
-    occur on every hit of the the API. If the login_date
-    was modified within 15 minutes then don't update it.
-    """
-
-    login = goldman.sess.login
-    now = dt.now()
-
-    if not login.login_date:
-        login.login_date = now
-    else:
-        sec_since_updated = (now - login.login_date).seconds
-        min_since_updated = sec_since_updated / 60
-
-        if min_since_updated > 15:
-            login.login_date = now
-
-    if login.dirty:
-        store = goldman.sess.store
-        store.update(login)
-
-
-signals.pre_create.connect(pre_create, sender=Model)
-signals.pre_save.connect(pre_save, sender=Model)
-
-signals.post_authenticate.connect(post_authenticate)
+signals.pre_create.connect(pre_create)
+signals.pre_save.connect(pre_save)

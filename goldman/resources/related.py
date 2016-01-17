@@ -47,8 +47,8 @@ class Resource(BaseResource):
         exist then abort on a 404.
         """
 
-        signals.responder_pre_any.send(self.model)
-        signals.responder_pre_find.send(self.model)
+        signals.pre_req.send(self.model)
+        signals.pre_req_find.send(self.model)
 
         if not hasattr(self.model, related):
             abort(InvalidURL(**{
@@ -69,5 +69,5 @@ class Resource(BaseResource):
 
         resp.serialize(props)
 
-        signals.responder_post_any.send(self.model)
-        signals.responder_post_find.send(self.model)
+        signals.post_req.send(self.model)
+        signals.post_req_find.send(self.model)

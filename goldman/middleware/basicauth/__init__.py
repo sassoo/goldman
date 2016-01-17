@@ -14,17 +14,12 @@
     `auth_creds` property which will be given a username &
     password.
 
-    The callable should return a login model of the successfully
-    authenticated user or raise an `AuthRejected` exception
+    The callable should raise an `AuthRejected` exception
     causing the request to be aborted IF the middleware's
     `optional` property is set to False (default).
-
-    The model will be assigned to the `goldman.sess.login`
-    propery if authentication succeeds.
 """
 
 import goldman
-import goldman.signals as signals
 
 from goldman.exceptions import (
     AuthRejected,
@@ -136,12 +131,9 @@ class Middleware(object):
     def process_request(self, req, resp):  # pylint: disable=unused-argument
         """ Process the request before routing it. """
 
-        signals.pre_authenticate.send()
-
         try:
             creds = self._get_creds(req)
-            goldman.sess.login = self.auth_creds(*creds)
-            signals.post_authenticate.send()
+            self.auth_creds(*creds)
         except (AuthRejected, AuthRequired, InvalidAuthSyntax) as exc:
             exc.headers = self._error_headers
             if not self.optional:
