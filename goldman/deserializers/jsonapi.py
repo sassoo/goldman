@@ -181,7 +181,7 @@ class Deserializer(JsonDeserializer):
                               'to-one side directly.' % key,
                     'links': link,
                 }))
-            else:
+            elif val['data']:
                 self.fail('The relationship key %s is malformed & impossible '
                           'for us to understand your intentions. It MUST be '
                           'a hash & contain a `data` field compliant with '
