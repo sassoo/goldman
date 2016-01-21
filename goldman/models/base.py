@@ -160,7 +160,7 @@ class Model(_SchematicsModel):
         :param errors:
             dict of errors in schematics format
         :return:
-            list of ValidationFailiure exception objects
+            list of ValidationFailure exception objects
         """
 
         ret = []
