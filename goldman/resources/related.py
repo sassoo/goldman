@@ -58,7 +58,10 @@ class Resource(BaseResource):
             }))
 
         model = find(self.model, rid)
-        model_related = getattr(model, related).load()
+        try:
+            model_related = getattr(model, related).load()
+        except AttributeError:
+            model_related = None
 
         if isinstance(model_related, list):
             props = to_rest_models(model_related, includes=req.includes)
