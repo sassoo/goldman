@@ -48,6 +48,9 @@ class Model(_SchematicsModel):
         if name in self.to_one and hasattr(value, 'rid_value'):
             to_one = getattr(self, '_fields')[name]
             value = to_one.to_native(value.rid_value)
+        elif name in self.to_one and value:
+            to_one = getattr(self, '_fields')[name]
+            value = to_one.to_native(value)
 
         super(Model, self).__setattr__(name, value)
 
