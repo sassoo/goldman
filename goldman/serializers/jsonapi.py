@@ -37,25 +37,25 @@ class Serializer(BaseSerializer):
                 'self': self.req.path,
             },
             'meta': {
-                'included-count': 0,
-                'primary-count': 0,
-                'total-primary': self.req.pages.total,
+                'included_count': 0,
+                'primary_count': 0,
+                'total_primary': self.req.pages.total,
             },
         }
 
         included = data['included']
         if included:
             body['included'] = self._serialize_datas(included)
-            body['meta']['included-count'] = len(included)
+            body['meta']['included_count'] = len(included)
 
         _data = data['data']
         if isinstance(_data, list):
             body.update({'data': self._serialize_datas(_data)})
             body.update({'links': self._serialize_pages()})
-            body['meta']['primary-count'] = len(_data)
+            body['meta']['primary_count'] = len(_data)
         elif _data:
             body.update({'data': self._serialize_data(_data)})
-            body['meta']['primary-count'] = 1
+            body['meta']['primary_count'] = 1
         else:
             body.update({'data': None})
 
