@@ -149,7 +149,7 @@ def _parse_param(key):
         tuple of string field name & string operator
     """
 
-    regex = re.compile(r'filter\[([A-Za-z0-9_.]+)\]')
+    regex = re.compile(r'filter\[([A-Za-z0-9_./]+)\]')
     match = regex.match(key)
 
     if match:
@@ -172,7 +172,7 @@ def _parse_param(key):
 def _validate_field(param, fields):
     """ Ensure the field exists on the model """
 
-    if '.' not in param.field and param.field not in fields:
+    if '/' not in param.field and param.field not in fields:
         raise InvalidQueryParams(**{
             'detail': 'The filter query param of "%s" is not possible. The '
                       'resource requested does not have a "%s" field. Please '
@@ -191,7 +191,7 @@ def _validate_rel(param, rels):
          relationships model!
     """
 
-    if param.field.count('.') > 1:
+    if param.field.count('/') > 1:
         raise InvalidQueryParams(**{
             'detail': 'The filter query param of "%s" is attempting to '
                       'filter on a nested relationship which is not '
@@ -199,8 +199,8 @@ def _validate_rel(param, rels):
             'links': LINK,
             'parameter': PARAM,
         })
-    elif '.' in param.field:
-        model_field = param.field.split('.')[0]
+    elif '/' in param.field:
+        model_field = param.field.split('/')[0]
 
         if model_field not in rels:
             raise InvalidQueryParams(**{
@@ -290,7 +290,7 @@ def init(req, model):
             continue
 
         try:
-            local_field, foreign_filter = field.split('.')
+            local_field, foreign_filter = field.split('/')
             field_type = getattr(model, local_field)
 
             foreign_field = field_type.field
@@ -317,5 +317,6 @@ def init(req, model):
         _validate_rel(param, rels)
         _validate_field(param, fields)
         params.append(param)
+        print 'XXX HERE', param
 
     return params

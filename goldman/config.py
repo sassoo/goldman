@@ -31,7 +31,7 @@ class Config(object):
     EQUAL_FILTERS = ('eq', 'neq')
     GEO_FILTERS = ('near', 'within')
     NUM_FILTERS = ('gt', 'gte', 'lt', 'lte')
-    STR_FILTERS = ('contains', 'icontains', 'endswith', 'startswith')
+    STR_FILTERS = ('contains', 'icontains', 'iexact', 'endswith', 'startswith')
 
     QUERY_FILTERS = BOOL_FILTERS + DATE_FILTERS + ENUM_FILTERS + \
         EQUAL_FILTERS + GEO_FILTERS + NUM_FILTERS + STR_FILTERS

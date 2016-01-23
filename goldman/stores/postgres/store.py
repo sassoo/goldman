@@ -39,6 +39,7 @@ FILTER_TABLE = {
 
     'contains': 'LIKE',
     'icontains': 'ILIKE',
+    'iexact': 'ILIKE',
     'endswith': 'LIKE',
     'startswith': 'LIKE',
 
