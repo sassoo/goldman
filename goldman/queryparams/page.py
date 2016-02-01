@@ -63,14 +63,14 @@ class Paginator(object):
     def current(self):
         """ Generate query parameters for the current page """
 
-        return 'page[offset]=%s&page[limit]=%s' % (self.offset, self.limit)
+        return {'page[offset]': self.offset, 'page[limit]': self.limit}
 
     @property
     def first(self):
         """ Generate query parameters for the first page """
 
         if self.total and self.limit < self.total:
-            return 'page[offset]=0&page[limit]=%s' % self.limit
+            return {'page[offset]': 0, 'page[limit]': self.limit}
         else:
             return None
 
@@ -84,8 +84,7 @@ class Paginator(object):
             return None
         else:
             offset = (self.total / self.limit) * self.limit
-            limit = self.total - offset
-            return 'page[offset]=%s&page[limit]=%s' % (offset, limit)
+            return {'page[offset]': offset, 'page[limit]': self.limit}
 
     @property
     def more(self):
@@ -95,7 +94,7 @@ class Paginator(object):
             return self.last
         else:
             offset = self.offset + self.limit
-            return 'page[offset]=%s&page[limit]=%s' % (offset, self.limit)
+            return {'page[offset]': offset, 'page[limit]': self.limit}
 
     @property
     def prev(self):
@@ -106,7 +105,7 @@ class Paginator(object):
                 return self.first
             else:
                 offset = self.offset - self.limit
-                return 'page[offset]=%s&page[limit]=%s' % (offset, self.limit)
+                return {'page[offset]': offset, 'page[limit]': self.limit}
         else:
             return None
 

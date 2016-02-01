@@ -317,6 +317,5 @@ def init(req, model):
         _validate_rel(param, rels)
         _validate_field(param, fields)
         params.append(param)
-        print 'XXX HERE', param
 
     return params

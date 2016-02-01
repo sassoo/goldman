@@ -11,8 +11,9 @@
 import goldman
 import json
 
-from goldman.utils.url_helpers import rid_url
 from ..serializers.base import Serializer as BaseSerializer
+from goldman.utils.url_helpers import rid_url
+from urllib import urlencode
 
 
 class Serializer(BaseSerializer):
@@ -135,7 +136,9 @@ class Serializer(BaseSerializer):
 
         for key, val in pages.items():
             if val:
-                links[key] = '%s?%s' % (self.req.path, val)
+                params = self.req.params
+                params.update(val)
+                links[key] = '%s?%s' % (self.req.path, urlencode(params))
                 self.resp.add_link(links[key], key)
             else:
                 links[key] = val
