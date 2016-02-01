@@ -49,9 +49,8 @@ class ToOne(object):
     def __repr__(self):
 
         name = self.__class__.__name__
-
-        return '%s(\'%s\', \'%s\', rid=\'%s\')' % (name, self.rtype, self.field,
-                                                   self.rid)
+        return '%s(\'%s\', \'%s\', \'%s\')' % (name, self.rtype, self.field,
+                                               self.rid)
 
     def __str__(self):
 

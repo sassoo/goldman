@@ -52,6 +52,25 @@ def find(model, rid):
     return model
 
 
+def _from_rest_blank(model, props):
+    """ Set empty strings to None where allowed
+
+    This is done on fields with `allow_blank=True` which takes
+    an incoming empty string & sets it to None so validations
+    are skipped. This is useful on fields that aren't required
+    with format validations like URLType, EmailType, etc.
+    """
+
+    blank = model.get_fields_by_prop('allow_blank', True)
+
+    for field in blank:
+        try:
+            if props[field] == '':
+                props[field] = None
+        except KeyError:
+            continue
+
+
 def _from_rest_hide(model, props):
     """ Purge fields not allowed during a REST deserialization
 
@@ -134,6 +153,7 @@ def from_rest(model, props):
 
     Additionally, perform the following tasks:
 
+        * set all blank strings to None where needed
         * purge all fields not allowed as incoming data
         * purge all unknown fields from the incoming data
         * lowercase certain fields that need it
@@ -145,6 +165,7 @@ def from_rest(model, props):
 
     req = goldman.sess.req
 
+    _from_rest_blank(model, props)
     _from_rest_hide(model, props)
     _from_rest_ignore(model, props)
     _from_rest_lower(model, props)

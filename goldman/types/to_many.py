@@ -40,10 +40,13 @@ class ToMany(object):
         except AttributeError:
             return False
 
+    def __ne__(self, other):
+
+        return not self == other
+
     def __repr__(self):
 
         name = self.__class__.__name__
-
         return '%s(\'%s\', \'%s\', \'%s\')' % (name, self.rtype, self.field,
                                                self.rid)
 
