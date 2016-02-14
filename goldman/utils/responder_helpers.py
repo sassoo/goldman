@@ -25,7 +25,7 @@ __all__ = ['find', 'from_rest', 'to_rest_model', 'to_rest_models']
 def validate_rid(model, rid):
     """ Ensure the resource id is proper """
 
-    rid_field = getattr(model, model.rid_field)
+    rid_field = getattr(model, model.rid_field_name)
 
     if isinstance(rid_field, IntType):
         try:
@@ -43,8 +43,8 @@ def find(model, rid):
 
     validate_rid(model, rid)
 
-    rid_field = model.rid_field
-    model = goldman.sess.store.find(model.RTYPE, rid_field, rid)
+    rid_field_name = model.rid_field_name
+    model = goldman.sess.store.find(model.RTYPE, rid_field_name, rid)
 
     if not model:
         abort(exceptions.DocumentNotFound)
@@ -284,7 +284,7 @@ def _to_rest(model, includes=None):
     sparse = goldman.sess.req.fields.get(model.rtype, [])
 
     if sparse:
-        sparse += [model.rid_field, model.rtype_field]
+        sparse += [model.rid_field_name, model.rtype_field]
         sparse += includes
 
     props = model.to_primitive(
@@ -292,7 +292,7 @@ def _to_rest(model, includes=None):
         sparse_fields=sparse,
     )
 
-    props['rid'] = props.pop(model.rid_field)
+    props['rid'] = props.pop(model.rid_field_name)
     props['rtype'] = props.pop(model.rtype_field)
 
     _to_rest_hide(model, props)
