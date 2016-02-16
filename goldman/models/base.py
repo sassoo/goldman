@@ -46,19 +46,21 @@ class Model(_SchematicsModel):
         """
 
         if name in self.to_one and hasattr(value, 'rid_value'):
-            to_one = getattr(self, 'fields')[name]
+            to_one = getattr(self, '_fields')[name]
             value = to_one.to_native(value.rid_value)
         elif name in self.to_one and value:
-            to_one = getattr(self, 'fields')[name]
+            to_one = getattr(self, '_fields')[name]
             value = to_one.to_native(value)
 
         super(Model, self).__setattr__(name, value)
 
     @classproperty
-    def fields(cls):  # NOQA
-        """ Return an OrderedDict of all the fields """
+    def all_fields(cls):  # NOQA
+        """ Return a list of all the fields """
 
-        return getattr(cls, '_fields')
+        fields = getattr(cls, '_fields')
+
+        return fields.keys()
 
     @classproperty
     def relationships(cls):  # NOQA
@@ -68,13 +70,6 @@ class Model(_SchematicsModel):
 
     @classproperty
     def rid_field(cls):  # NOQA
-        """ Return the resource id field """
-
-        rid_field_name = cls.rid_field_name
-        return cls.fields[rid_field_name]
-
-    @classproperty
-    def rid_field_name(cls):  # NOQA
         """ Return the resource id field str name """
 
         return cls.get_fields_by_prop('rid', True)[0]
@@ -153,7 +148,7 @@ class Model(_SchematicsModel):
 
         ret = []
 
-        for key, val in getattr(cls, 'fields').items():
+        for key, val in getattr(cls, '_fields').items():
             if hasattr(val, prop_key):
                 ret.append((key, getattr(val, prop_key)))
         return ret
@@ -205,7 +200,7 @@ class Model(_SchematicsModel):
 
         dirty_fields = []
 
-        for field in self.fields:
+        for field in self.all_fields:
             if field not in self._original:
                 dirty_fields.append(field)
             elif self._original[field] != getattr(self, field):

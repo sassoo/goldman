@@ -325,16 +325,16 @@ class Store(BaseStore):
 
         signals.pre_delete.send(model.__class__, model=model)
 
-        param = {'rid_value': self.to_pg(model)[model.rid_field_name]}
+        param = {'rid_value': self.to_pg(model)[model.rid_field]}
         query = """
                 DELETE FROM {table}
-                WHERE {rid_field_name} = %(rid_value)s
+                WHERE {rid_field} = %(rid_value)s
                 RETURNING {cols};
                 """
 
         query = query.format(
             cols=self.field_cols(model),
-            rid_field_name=model.rid_field_name,
+            rid_field=model.rid_field,
             table=model.rtype,
         )
 
@@ -476,12 +476,12 @@ class Store(BaseStore):
         signals.pre_save.send(model.__class__, model=model)
 
         param = self.to_pg(model)
-        param['rid_value'] = param[model.rid_field_name]
+        param['rid_value'] = param[model.rid_field]
 
         query = """
                 UPDATE {table}
                 SET ({dirty_cols}) = ({dirty_vals})
-                WHERE {rid_field_name} = %(rid_value)s
+                WHERE {rid_field} = %(rid_value)s
                 RETURNING {cols};
                 """
 
@@ -489,7 +489,7 @@ class Store(BaseStore):
             cols=self.field_cols(model),
             dirty_cols=self.dirty_cols(model),
             dirty_vals=self.dirty_vals(model),
-            rid_field_name=model.rid_field_name,
+            rid_field=model.rid_field,
             table=model.rtype,
         )
 
